@@ -152,7 +152,8 @@ public class ParameterSelection : MonoBehaviour
     }
     else if (columnName == "Sound")
     {
-        SoundManager.Stop();
+        //SoundManager.Stop();
+        SoundManager.FadeOutAndStop();
 
         SoundManager.PlaySoundLooped(category, SoundType.MUSIC);
     }

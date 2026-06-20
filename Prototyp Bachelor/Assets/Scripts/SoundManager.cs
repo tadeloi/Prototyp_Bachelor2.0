@@ -14,6 +14,10 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private SoundList[] soundList;
     private static SoundManager instance;
     private AudioSource audioSource;
+    //private AudioSource musicAudioSource;
+
+    public AudioSource AudioSourceTemplate;
+    [SerializeField] private AudioSource[] audioSources;
 
     private void Start()
     {
@@ -22,7 +26,10 @@ public class SoundManager : MonoBehaviour
 
     private void Awake()
     {
-        instance = this;
+        if (instance == null)
+            instance = this;
+        else
+            Debug.LogError("Should not have more than 1 AudioManager.");
     }
 
     public static void PlaySound(Categories parameter, SoundType sound, float volume = 1)
@@ -36,11 +43,24 @@ public class SoundManager : MonoBehaviour
     {
         AudioClip[] clips = instance.soundList[(int)sound].Sounds;
         AudioClip parameterClip = clips[(int)parameter];
+        AudioSource musicAudioSource = null;
 
-        instance.audioSource.clip = parameterClip;
-        instance.audioSource.volume = volume;
-        instance.audioSource.loop = true;
-        instance.audioSource.Play();
+        foreach(AudioSource source in instance.audioSources)
+        {
+            if (!source.isPlaying)
+            {
+                musicAudioSource = source;
+                break;
+            }
+        }
+
+        if (musicAudioSource == null)
+            return;
+
+        musicAudioSource.clip = parameterClip;
+        musicAudioSource.volume = volume;
+        musicAudioSource.loop = true;
+        musicAudioSource.Play();
     }
 
     public static void Stop()
@@ -50,7 +70,18 @@ public class SoundManager : MonoBehaviour
     }
     public static void FadeOutAndStop(float fadeDuration = 1f)
     {
-        instance.StartCoroutine(instance.FadeOutCoroutine(fadeDuration));
+        foreach (AudioSource source in instance.audioSources)
+        {
+            if(source != null)
+            {
+                Debug.Log("Trying to stop all running music");
+                Debug.Log("Currently at sound: " + source.ToString());
+            }
+            if(source.isPlaying)
+            {
+                instance.StartCoroutine(instance.FadeOutCoroutine(source, fadeDuration));
+            }
+        }
     }
 
     private IEnumerator FadeOutCoroutine(float fadeDuration)
@@ -68,6 +99,23 @@ public class SoundManager : MonoBehaviour
         audioSource.Stop();
         audioSource.loop = false;
         audioSource.volume = startVolume; // Lautstärke zurücksetzen für spätere Sounds
+    }
+
+    private IEnumerator FadeOutCoroutine(AudioSource source, float fadeDuration)
+    {
+        float startVolume = source.volume;
+        float elapsed = 0f;
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            source.volume = Mathf.Lerp(startVolume, 0f, elapsed / fadeDuration);
+            yield return null;
+        }
+
+        source.Stop();
+        source.loop = false;
+        source.volume = startVolume; // Lautstärke zurücksetzen für spätere Sounds
     }
 
 
