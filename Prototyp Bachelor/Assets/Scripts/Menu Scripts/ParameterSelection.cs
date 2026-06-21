@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 public class ParameterSelection : MonoBehaviour
 {
-    [SerializeField] public GameObject[] choosableParameters = new GameObject[2];
+    [SerializeField] public GameObject[] choosableParameters = new GameObject[6];
     [SerializeField] private Material[] categoryMaterials = new Material[7];
     private ParameterColumn[] columns;
     private GameObject currentOption;
@@ -22,10 +22,14 @@ public class ParameterSelection : MonoBehaviour
     {
         currentOption = choosableParameters[0];
         SetHighlight(currentOption, true);
-        columns = new ParameterColumn[2];
+        columns = new ParameterColumn[6];
 
         columns[0] = new ParameterColumn("Color");
         columns[1] = new ParameterColumn("Material");
+        columns[2] = new ParameterColumn("Light");
+        columns[3] = new ParameterColumn("Sound");
+        columns[4] = new ParameterColumn("Scale");
+        columns[5] = new ParameterColumn("Shape");
     }
 
     void Awake()
@@ -57,19 +61,19 @@ public class ParameterSelection : MonoBehaviour
 
     void VerticalMovement(InputAction.CallbackContext context)
     {
-    Vector2 input = context.ReadValue<Vector2>();
-    int direction = 0;
-    if (input.y > 0.5f) direction = -1;       // hoch = vorheriger Eintrag
-    else if (input.y < -0.5f) direction = 1;  // runter = nächster Eintrag
-    if (direction == 0) return;
-    // Altes Highlight zurücksetzen
-    SetHighlight(choosableParameters[currentIndex], false);
-    // Index aktualisieren mit Wrap-Around
-    currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
-    currentOption = choosableParameters[currentIndex];
-    // Neues Highlight setzen
-    SetHighlight(currentOption, true);
-    Debug.Log($"Vertical Movement: {currentOption.name} ausgewählt");
+        Vector2 input = context.ReadValue<Vector2>();
+        int direction = 0;
+        if (input.y > 0.5f) direction = -1;       // hoch = vorheriger Eintrag
+        else if (input.y < -0.5f) direction = 1;  // runter = nächster Eintrag
+        if (direction == 0) return;
+            // Altes Highlight zurücksetzen
+        SetHighlight(choosableParameters[currentIndex], false);
+        // Index aktualisieren mit Wrap-Around
+        currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
+        currentOption = choosableParameters[currentIndex];
+        // Neues Highlight setzen
+        SetHighlight(currentOption, true);
+        Debug.Log($"Vertical Movement: {currentOption.name} ausgewählt");
     }
     void SetHighlight(GameObject option, bool highlighted)
     {
@@ -91,11 +95,11 @@ public class ParameterSelection : MonoBehaviour
     }
     void HorizontalMovement(InputAction.CallbackContext context)
     {
-    Vector2 input = context.ReadValue<Vector2>();
-    if (input.x > 0.5f)
-        ChangeCategory(1);
-    else if (input.x < -0.5f)
-        ChangeCategory(-1);
+        Vector2 input = context.ReadValue<Vector2>();
+        if (input.x > 0.5f)
+            ChangeCategory(1);
+        else if (input.x < -0.5f)
+            ChangeCategory(-1);
     }
     void ChangeCategory(int direction)
     {
@@ -143,22 +147,25 @@ public class ParameterSelection : MonoBehaviour
         // Material-Logik analog, sobald du sie brauchst
     }
     else if (columnName == "Light")
-        {
+    {
             
-        }
-    else if (columnName == "Sound")
-        {
-            
-        }
-        else if (columnName == "Scale")
-        {
-            
-        }
-        else if (columnName == "Shape")
-        {
-            
-        }
     }
+    else if (columnName == "Sound")
+    {
+        //SoundManager.Stop();
+        SoundManager.FadeOutAndStop();
+
+        SoundManager.PlaySoundLooped(category, SoundType.MUSIC);
+    }
+    else if (columnName == "Scale")
+    {
+            
+    }
+    else if (columnName == "Shape")
+    {
+            
+    }
+}
 
     void Select(InputAction.CallbackContext context)
     {
