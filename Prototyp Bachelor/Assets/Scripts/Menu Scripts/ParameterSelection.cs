@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 using TMPro;
 using UnityEngine.InputSystem;
 using System;
@@ -9,6 +11,12 @@ using System.Collections.Generic;
 
 public class ParameterSelection : MonoBehaviour
 {
+    private enum NavigationMode { Parameters, Presets }
+    private NavigationMode navigationMode = NavigationMode.Parameters;
+    private int presetIndex = 0;
+
+    [SerializeField] private GameObject[] presetButtons = new GameObject[7];
+
     [SerializeField] public GameObject[] choosableParameters = new GameObject[6];
     [SerializeField] private Material[] categoryColors = new Material[7];
 
@@ -20,6 +28,7 @@ public class ParameterSelection : MonoBehaviour
     [SerializeField] private GameObject[] particleList = new GameObject[7];
 
     private ParameterRenderer[] parameterRenderSettings = new ParameterRenderer[7];
+    private Volume[] parameterVolumes = new Volume[7];
 
     private ParameterColumn[] columns;
     private GameObject currentOption;
@@ -48,8 +57,7 @@ public class ParameterSelection : MonoBehaviour
 
         for (int i = 0; i < parameterRenderSettings.Length; i++)
         {
-            parameterRenderSettings[(int)((Categories)i)] = new ParameterRenderer(((Categories)i).ToString());
-            Debug.Log(parameterRenderSettings[i].name);
+            parameterVolumes[i] = new Volume();
 
             //Empty
             if(i == 0)
@@ -88,7 +96,48 @@ public class ParameterSelection : MonoBehaviour
             }
         }
 
-    }
+        for (int i = 0; i < parameterVolumes.Length; i++)
+        {
+            parameterRenderSettings[(int)((Categories)i)] = new ParameterRenderer(((Categories)i).ToString());
+            Debug.Log(parameterRenderSettings[i].name);
+
+            //Empty
+            if(i == 0)
+            {
+                
+            }
+            //Horror
+            else if (i == 1)
+            {
+                
+            }
+            //Cozy
+            else if (i == 2)
+            {
+                
+            }
+            //Fantasy
+            else if (i == 3)
+            {
+                
+            }
+            //SciFi
+            else if (i == 4)
+            {
+                
+            }
+            //Logik
+            else if (i == 5)
+            {
+                
+            }
+            //Retro
+            else if (i == 6)
+            {
+                
+            }
+        }
+    }    
 
     void Awake()
     {
@@ -118,6 +167,45 @@ public class ParameterSelection : MonoBehaviour
     }
 
     void VerticalMovement(InputAction.CallbackContext context)
+{
+    Vector2 input = context.ReadValue<Vector2>();
+    int direction = 0;
+    if (input.y > 0.5f) direction = -1;
+    else if (input.y < -0.5f) direction = 1;
+    if (direction == 0) return;
+
+    if (navigationMode == NavigationMode.Presets)
+    {
+        // Von Presets nach unten → zurück zu Parametern
+        if (direction == 1)
+        {
+            SetPresetHighlight(presetIndex, false);
+            navigationMode = NavigationMode.Parameters;
+            SetHighlight(choosableParameters[currentIndex], true);
+        }
+        return;
+    }
+
+    // NavigationMode.Parameters
+    bool atTop = currentIndex == 0 && direction == -1;
+    if (atTop)
+    {
+        // Rauf aus der Liste → in Preset-Zeile wechseln
+        SetHighlight(choosableParameters[currentIndex], false);
+        navigationMode = NavigationMode.Presets;
+        SetPresetHighlight(presetIndex, true);
+        return;
+    }
+
+    SetHighlight(choosableParameters[currentIndex], false);
+    currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
+    currentOption = choosableParameters[currentIndex];
+    SetHighlight(currentOption, true);
+}
+
+
+    /*Saving old VerticalMovement in Case of Fallback
+    void VerticalMovement(InputAction.CallbackContext context)
     {
         Vector2 input = context.ReadValue<Vector2>();
         int direction = 0;
@@ -132,7 +220,8 @@ public class ParameterSelection : MonoBehaviour
         // Neues Highlight setzen
         SetHighlight(currentOption, true);
         Debug.Log($"Vertical Movement: {currentOption.name} ausgewählt");
-    }
+    }*/
+
     void SetHighlight(GameObject option, bool highlighted)
     {
         Transform bg = option.transform.Find("Background");
@@ -151,6 +240,25 @@ public class ParameterSelection : MonoBehaviour
             selectable.OnPointerExit(null);
         }
     }
+    
+    void HorizontalMovement(InputAction.CallbackContext context)
+    {
+        Vector2 input = context.ReadValue<Vector2>();
+        int direction = input.x > 0.5f ? 1 : input.x < -0.5f ? -1 : 0;
+        if (direction == 0) return;
+
+        if (navigationMode == NavigationMode.Presets)
+        {
+            SetPresetHighlight(presetIndex, false);
+            presetIndex = (presetIndex + direction + presetButtons.Length) % presetButtons.Length;
+            SetPresetHighlight(presetIndex, true);
+            return;
+        }
+    ChangeCategory(direction);
+}
+
+
+    /*Saving old HorizontalMovement in Case of Fallback
     void HorizontalMovement(InputAction.CallbackContext context)
     {
         Vector2 input = context.ReadValue<Vector2>();
@@ -158,7 +266,8 @@ public class ParameterSelection : MonoBehaviour
             ChangeCategory(1);
         else if (input.x < -0.5f)
             ChangeCategory(-1);
-    }
+    }*/
+
     void ChangeCategory(int direction)
     {
         ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
@@ -260,10 +369,54 @@ public class ParameterSelection : MonoBehaviour
 
             vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
 
-            ApplyRenderSettings(category);
+            //ApplyRenderSettings(category);
         }
     }
 
+    void Select(InputAction.CallbackContext context)
+{
+    if (navigationMode == NavigationMode.Presets)
+    {
+        ApplyPreset((Categories)presetIndex);
+        return;
+    }
+
+    void ApplyPreset(Categories category)
+{
+    string[] columnNames = { "Color", "Material", "Light", "Sound", "Scale", "VFX" };
+
+    for (int i = 0; i < columns.Length; i++)
+    {
+        columns[i].chosenCategory = category;
+        columns[i].isActive = true;
+
+        // Toggle-UI aktualisieren
+        choosableParameters[i].GetComponentInChildren<Toggle>().isOn = true;
+
+        // Label aktualisieren
+        Transform textTransform = choosableParameters[i].transform.Find("Parameter");
+        if (textTransform != null)
+        {
+            TMP_Text label = textTransform.GetComponent<TMP_Text>();
+            if (label != null)
+                label.text = "<" + category.ToString() + ">";
+        }
+
+        // Auf die Welt anwenden
+        ApplyToWorld(columnNames[i], category);
+    }
+}
+
+    ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
+    currentColumn.Toggle();
+    currentOption.GetComponentInChildren<Toggle>().isOn = currentColumn.isActive;
+    if (!currentColumn.isActive)
+        ApplyToWorld(currentOption.name, Categories.Empty);
+    else
+        ApplyToWorld(currentOption.name, currentColumn.chosenCategory);
+}
+
+    /*Save old Select
     void Select(InputAction.CallbackContext context)
     {
         Debug.Log("Selection");
@@ -280,7 +433,18 @@ public class ParameterSelection : MonoBehaviour
             // Toggle wurde eingeschaltet → aktuelle Category anwenden
             ApplyToWorld(currentOption.name, currentColumn.chosenCategory);
         }
-    }
+    }*/
+
+void SetPresetHighlight(int index, bool highlighted)
+{
+    if (index < 0 || index >= presetButtons.Length) return;
+    Selectable selectable = presetButtons[index].GetComponentInChildren<Selectable>();
+    if (selectable == null) return;
+    if (highlighted)
+        selectable.OnPointerEnter(null);
+    else
+        selectable.OnPointerExit(null);
+}
 
     public void ToggleSetting()
     {
