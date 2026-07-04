@@ -18,6 +18,8 @@ public class ParameterSelection : MonoBehaviour
     [SerializeField] private GameObject[] presetButtons = new GameObject[7];
 
     [SerializeField] public GameObject[] choosableParameters = new GameObject[6];
+    private enum RowElement { Title = 0, Toggle = 1, Category = 2 }
+    private RowElement currentElement = RowElement.Title;
     [SerializeField] private Material[] categoryColors = new Material[7];
 
     [SerializeField] private Material[] treeStumpMaterials = new Material[7];
@@ -41,6 +43,7 @@ public class ParameterSelection : MonoBehaviour
     private InputAction vertical;
     private InputAction horizontal;
     private InputAction select;
+    private InputAction selectGenre;
 
 
     private int currentIndex = 0;
@@ -48,7 +51,7 @@ public class ParameterSelection : MonoBehaviour
     void Start()
     {
         currentOption = choosableParameters[0];
-        SetHighlight(currentOption, true);
+        SetHighlight(currentOption, currentElement, true);
         columns = new ParameterColumn[6];
 
         columns[0] = new ParameterColumn("Color");
@@ -144,6 +147,59 @@ public class ParameterSelection : MonoBehaviour
         playerSettings.UpdateArray();
     }
 
+    void SetHighlight(GameObject row, RowElement element, bool highlighted)
+    {
+        Transform bg = row.transform.Find("Background");
+        if (bg == null) return;
+
+        Selectable selectable = bg.GetComponent<Selectable>();
+        if (selectable == null) return;
+
+        if (highlighted)
+        {
+            Transform target = GetElementTransform(row, element);
+            if (target != null)
+                FitBackgroundToElement(bg.GetComponent<RectTransform>(), target.GetComponent<RectTransform>());
+
+            selectable.OnPointerEnter(null);
+        }
+        else
+        {
+            selectable.OnPointerExit(null);
+        }
+    }
+
+    void FitBackgroundToElement(RectTransform bgRect, RectTransform targetRect)
+    {
+        if (bgRect == null || targetRect == null) return;
+
+        // Background und Ziel-Element liegen im selben Parent, daher reicht das direkte Kopieren
+        bgRect.anchorMin = targetRect.anchorMin;
+        bgRect.anchorMax = targetRect.anchorMax;
+        bgRect.pivot = targetRect.pivot;
+        bgRect.anchoredPosition = targetRect.anchoredPosition;
+        bgRect.sizeDelta = targetRect.sizeDelta;
+    }
+
+
+    Transform GetElementTransform(GameObject row, RowElement element)
+    {
+        string childName = element switch
+        {
+            RowElement.Title => "Text",
+            RowElement.Toggle => "Toggle",
+            RowElement.Category => "Parameter",
+            _ => null
+        };
+        if (childName == null) return null;
+
+        Transform t = row.transform.Find(childName);
+        if (t == null && element == RowElement.Toggle)
+            t = row.transform.Find("State"); // Fallback für die Sound-Zeile
+
+        return t;
+    }
+
     void Awake()
     {
         userUIInput = new InputSystem_Actions();
@@ -162,6 +218,10 @@ public class ParameterSelection : MonoBehaviour
         select = userUIInput.UI.Submit;
         select.Enable();
         select.performed += Select;
+
+        selectGenre = userUIInput.UI.SelectGenre;
+        selectGenre.Enable();
+        selectGenre.performed += SelectGenre;
     }
 
     void OnDisable()
@@ -181,31 +241,28 @@ public class ParameterSelection : MonoBehaviour
 
         if (navigationMode == NavigationMode.Presets)
         {
-            // Von Presets nach unten → zurück zu Parametern
             if (direction == 1)
             {
                 SetPresetHighlight(presetIndex, false);
                 navigationMode = NavigationMode.Parameters;
-                SetHighlight(choosableParameters[currentIndex], true);
+                SetHighlight(choosableParameters[currentIndex], currentElement, true);
             }
             return;
         }
 
-        // NavigationMode.Parameters
         bool atTop = currentIndex == 0 && direction == -1;
         if (atTop)
         {
-            // Rauf aus der Liste → in Preset-Zeile wechseln
-            SetHighlight(choosableParameters[currentIndex], false);
+            SetHighlight(choosableParameters[currentIndex], currentElement, false);
             navigationMode = NavigationMode.Presets;
             SetPresetHighlight(presetIndex, true);
             return;
         }
 
-        SetHighlight(choosableParameters[currentIndex], false);
+        SetHighlight(choosableParameters[currentIndex], currentElement, false);
         currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
         currentOption = choosableParameters[currentIndex];
-        SetHighlight(currentOption, true);
+        SetHighlight(currentOption, currentElement, true);
     }
 
 
@@ -227,26 +284,25 @@ public class ParameterSelection : MonoBehaviour
         Debug.Log($"Vertical Movement: {currentOption.name} ausgewählt");
     }*/
 
-    void SetHighlight(GameObject option, bool highlighted)
+    void HorizontalMovement(InputAction.CallbackContext context)
     {
-        Transform bg = option.transform.Find("Background");
-        if (bg == null) return;
-        Selectable selectable = bg.GetComponent<Selectable>();
-        Image image = bg.GetComponent<Image>();
-        if (selectable == null) return;
-        if (highlighted)
-        {
-            // Simuliert den Highlighted-Zustand nativ
-            selectable.OnPointerEnter(null);
-        }
-        else
-        {
-            // Setzt zurück auf Normal
-            selectable.OnPointerExit(null);
-        }
+        if (navigationMode != NavigationMode.Parameters) return;
+
+        Vector2 input = context.ReadValue<Vector2>();
+        int direction = 0;
+        if (input.x > 0.5f) direction = 1;
+        else if (input.x < -0.5f) direction = -1;
+        if (direction == 0) return;
+
+        int newElement = Mathf.Clamp((int)currentElement + direction, 0, 2);
+        if (newElement == (int)currentElement) return;
+
+        SetHighlight(currentOption, currentElement, false);
+        currentElement = (RowElement)newElement;
+        SetHighlight(currentOption, currentElement, true);
     }
 
-    void HorizontalMovement(InputAction.CallbackContext context)
+    void SelectGenre(InputAction.CallbackContext context)
     {
         Vector2 input = context.ReadValue<Vector2>();
         int direction = input.x > 0.5f ? 1 : input.x < -0.5f ? -1 : 0;
@@ -259,9 +315,11 @@ public class ParameterSelection : MonoBehaviour
             SetPresetHighlight(presetIndex, true);
             return;
         }
+
+        if (currentElement != RowElement.Category) return;
+
         ChangeCategory(direction);
     }
-
 
     /*Saving old HorizontalMovement in Case of Fallback
     void HorizontalMovement(InputAction.CallbackContext context)
@@ -288,22 +346,22 @@ public class ParameterSelection : MonoBehaviour
         if (label == null) return;
         label.text = "<" + currentColumn.chosenCategory.ToString() + ">";
 
-        if (currentColumn.isActive)
-            ApplyToWorld(currentOption.name, currentColumn.chosenCategory);
+        if (currentColumn.IsActive())
+            ApplyToWorld(currentColumn, currentColumn.chosenCategory);
         Debug.Log($"Horizontal Movement: {currentOption.name} → {currentColumn.chosenCategory}");
     }
 
-    void ApplyToWorld(string columnName, Categories category)
+    void ApplyToWorld(ParameterColumn columnName, Categories category)
     {
         GameObject world = GameObject.Find("Landschaft_ForUnity");
         if (world == null) return;
-        if (columnName == "Color")
+        if (columnName.name == "Color")
         {
             Material selectedColor = categoryColors[(int)category];
             foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>())
                 renderer.material.color = selectedColor.color;
         }
-        else if (columnName == "Material")
+        else if (columnName.name == "Material")
         {
             Material stumpMaterial = treeStumpMaterials[(int)category];
             Material leavesMaterial = treeLeavesMaterials[(int)category];
@@ -332,18 +390,35 @@ public class ParameterSelection : MonoBehaviour
 
             }
         }
-        else if (columnName == "Light")
+        else if (columnName.name == "Light")
         {
 
         }
-        else if (columnName == "Sound")
+        else if (columnName.name == "Sound")
         {
-            //SoundManager.Stop();
             SoundManager.FadeOutAndStop();
 
-            SoundManager.PlaySoundLooped(category, SoundType.MUSIC);
+            switch (columnName.GetState())
+            {
+                case 1:
+                    SoundManager.PlaySoundLooped(category, SoundType.MUSIC, 0.5f);
+                    break;
+                case 2:
+                    SoundManager.PlaySoundLooped(category, SoundType.BACKGROUND);
+                    break;
+                case 3:
+                    SoundManager.PlaySoundLooped(category, SoundType.MUSIC, 0.5f);
+                    SoundManager.PlaySoundLooped(category, SoundType.BACKGROUND);
+                    break;
+                case 0:
+                default:
+                    // FadeOutAndStop() oben reicht bereits aus
+                    break;
+            }
+
+            UpdateSoundIcon(columnName);
         }
-        else if (columnName == "Scale")
+        else if (columnName.name == "Scale")
         {
             if (cameraTransitionCoroutine != null)
                 StopCoroutine(cameraTransitionCoroutine);
@@ -362,7 +437,7 @@ public class ParameterSelection : MonoBehaviour
 
             cameraTransitionCoroutine = StartCoroutine(TransitionCamera(targetCam, targetTransform));*/
         }
-        else if (columnName == "VFX")
+        else if (columnName.name == "VFX")
         {
             if (vfxTransitionCoroutine != null)
                 StopCoroutine(vfxTransitionCoroutine);
@@ -370,6 +445,36 @@ public class ParameterSelection : MonoBehaviour
             vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
 
             //ApplyRenderSettings(category);
+        }
+    }
+
+    void UpdateSoundIcon(ParameterColumn columnName)
+    {
+        int index = Array.IndexOf(columns, columnName);
+        if (index < 0 || index >= choosableParameters.Length) return;
+
+        Transform stateTransform = choosableParameters[index].transform.Find("State");
+        if (stateTransform == null) return;
+
+        RawImage icon = stateTransform.GetComponent<RawImage>();
+        SoundSpriteSaver spriteSaver = stateTransform.GetComponent<SoundSpriteSaver>();
+        if (icon == null || spriteSaver == null) return;
+
+        switch (columnName.GetState())
+        {
+            case 1:
+                icon.texture = spriteSaver.musicSprite.texture;
+                break;
+            case 2:
+                icon.texture = spriteSaver.backgroundSprite.texture;
+                break;
+            case 3:
+                icon.texture = spriteSaver.bothSprite.texture;
+                break;
+            case 0:
+            default:
+                icon.texture = spriteSaver.offSprite.texture;
+                break;
         }
     }
 
@@ -381,6 +486,9 @@ public class ParameterSelection : MonoBehaviour
             return;
         }
 
+        if (currentElement != RowElement.Toggle)
+            return; // Titel & Kategorie reagieren nicht auf Submit
+
         void ApplyPreset(Categories category)
         {
             string[] columnNames = { "Color", "Material", "Light", "Sound", "Scale", "VFX" };
@@ -388,7 +496,7 @@ public class ParameterSelection : MonoBehaviour
             for (int i = 0; i < columns.Length; i++)
             {
                 columns[i].chosenCategory = category;
-                columns[i].isActive = true;
+                columns[i].SetActive();
 
                 // Toggle-UI aktualisieren
                 choosableParameters[i].GetComponentInChildren<Toggle>().isOn = true;
@@ -403,17 +511,19 @@ public class ParameterSelection : MonoBehaviour
                 }
 
                 // Auf die Welt anwenden
-                ApplyToWorld(columnNames[i], category);
+                ApplyToWorld(columns[i], category);
             }
         }
 
         ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
         currentColumn.Toggle();
-        currentOption.GetComponentInChildren<Toggle>().isOn = currentColumn.isActive;
-        if (!currentColumn.isActive)
-            ApplyToWorld(currentOption.name, Categories.Empty);
+        Toggle currentToggle = currentOption.GetComponentInChildren<Toggle>();
+        if (currentToggle != null)
+            currentToggle.isOn = currentColumn.IsActive();
+        if (!currentColumn.IsActive())
+            ApplyToWorld(currentColumn, Categories.Empty);
         else
-            ApplyToWorld(currentOption.name, currentColumn.chosenCategory);
+            ApplyToWorld(currentColumn, currentColumn.chosenCategory);
     }
 
     /*Save old Select
@@ -450,7 +560,7 @@ public class ParameterSelection : MonoBehaviour
     {
         Debug.Log("Toggling...");
         FindCurrentSelection(currentOption.name).Toggle();
-        currentOption.GetComponentInChildren<Toggle>().isOn = FindCurrentSelection(currentOption.name).isActive;
+        currentOption.GetComponentInChildren<Toggle>().isOn = FindCurrentSelection(currentOption.name).IsActive();
     }
 
 
@@ -630,7 +740,7 @@ public class ParameterSelection : MonoBehaviour
 
 class ParameterColumn
 {
-    public bool isActive = false;
+    public int state = 0;
     public string name;
     public Categories chosenCategory = 0;
 
@@ -662,7 +772,31 @@ class ParameterColumn
 
     public void Toggle()
     {
-        isActive = !isActive;
+        if (this.name == "Sound")
+            state = (state + 1) % 4;
+        else
+            state = (state + 1) % 2;
+    }
+
+    public bool IsActive()
+    {
+        if (state == 0)
+            return false;
+        else
+            return true;
+    }
+
+    public void SetActive()
+    {
+        if (this.name == "Sound")
+            this.state = 3;
+        else
+            this.state = 1;
+    }
+
+    public int GetState()
+    {
+        return this.state;
     }
 }
 
