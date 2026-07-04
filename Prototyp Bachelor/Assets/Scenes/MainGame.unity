@@ -411,14 +411,14 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 91e5e2a1d90aca24193883b9d3ce8ce6, type: 3}
     - {fileID: 8300000, guid: c6186962af538b74191171dbd95118d4, type: 3}
     - {fileID: 8300000, guid: 7bb0daff41cff1649ac6ee2589c8c358, type: 3}
-    - {fileID: 8300000, guid: 590d26d27cee8ef44af48796f81c3d77, type: 3}
+    - {fileID: 8300000, guid: cdd52ee30ffab0b41af9a57762848c1c, type: 3}
     - {fileID: 8300000, guid: 0907e8664d50ddf42a9edeec67a18822, type: 3}
   - name: BACKGROUND
     sounds:
     - {fileID: 0}
-    - {fileID: 0}
+    - {fileID: 8300000, guid: 745a6fc2007759142b37ca6f857c5a50, type: 3}
     - {fileID: 8300000, guid: 988daa117b1dba04d81add06330211a1, type: 3}
-    - {fileID: 0}
+    - {fileID: 8300000, guid: 7fda496244130b34185fc65d1ee12336, type: 3}
     - {fileID: 8300000, guid: 88b83092d28047a4cb8ee0d8c98a835b, type: 3}
     - {fileID: 0}
     - {fileID: 8300000, guid: b91c7217e8cf77b4d93577829e586004, type: 3}
