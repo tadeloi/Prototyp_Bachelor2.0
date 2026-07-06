@@ -11,6 +11,20 @@ using System.Collections.Generic;
 
 public class ParameterSelection : MonoBehaviour
 {
+
+    [Header("Input Repeat Settings")]
+    [SerializeField] private float initialRepeatDelay = 0.4f;
+    [SerializeField] private float repeatRate = 0.15f;
+
+    private int lastVerticalDirection = 0;
+    private float nextVerticalInputTime = 0f;
+
+    private int lastHorizontalDirection = 0;
+    private float nextHorizontalInputTime = 0f;
+
+    private int lastGenreDirection = 0;
+    private float nextGenreInputTime = 0f;
+
     private enum NavigationMode { Parameters, Presets }
     private NavigationMode navigationMode = NavigationMode.Parameters;
     private int presetIndex = 0;
@@ -147,6 +161,108 @@ public class ParameterSelection : MonoBehaviour
         playerSettings.UpdateArray();
     }
 
+    void Update()
+    {
+        ProcessRepeatingInput(vertical, true, ref lastVerticalDirection, ref nextVerticalInputTime, DoVerticalMovement);
+        ProcessRepeatingInput(horizontal, false, ref lastHorizontalDirection, ref nextHorizontalInputTime, DoHorizontalMovement);
+        ProcessRepeatingInput(selectGenre, false, ref lastGenreDirection, ref nextGenreInputTime, DoGenreMovement);
+    }
+
+    void ProcessRepeatingInput(InputAction action, bool useYAxis, ref int lastDirection, ref float nextInputTime, Action<int> onTrigger)
+    {
+        Vector2 input = action.ReadValue<Vector2>();
+        float axisValue = useYAxis ? input.y : input.x;
+
+        int direction = 0;
+        if (useYAxis)
+        {
+            if (axisValue > 0.5f) direction = -1;
+            else if (axisValue < -0.5f) direction = 1;
+        }
+        else
+        {
+            if (axisValue > 0.5f) direction = 1;
+            else if (axisValue < -0.5f) direction = -1;
+        }
+
+        if (direction == 0)
+        {
+            lastDirection = 0; // Stick ist neutral -> Repeat-Zustand zurücksetzen
+            return;
+        }
+
+        if (direction != lastDirection)
+        {
+            // Neue Auslenkung (oder Richtungswechsel) -> sofort 1 Schritt
+            onTrigger(direction);
+            lastDirection = direction;
+            nextInputTime = Time.time + initialRepeatDelay;
+        }
+        else if (Time.time >= nextInputTime)
+        {
+            // Stick wird weiter in dieselbe Richtung gehalten -> Repeat
+            onTrigger(direction);
+            nextInputTime = Time.time + repeatRate;
+        }
+    }
+
+    void DoVerticalMovement(int direction)
+    {
+        if (navigationMode == NavigationMode.Presets)
+        {
+            if (direction == 1)
+            {
+                SetPresetHighlight(presetIndex, false);
+                navigationMode = NavigationMode.Parameters;
+                SetHighlight(choosableParameters[currentIndex], currentElement, true);
+            }
+            return;
+        }
+
+        bool atTop = currentIndex == 0 && direction == -1;
+        if (atTop)
+        {
+            SetHighlight(choosableParameters[currentIndex], currentElement, false);
+            navigationMode = NavigationMode.Presets;
+            SetPresetHighlight(presetIndex, true);
+            return;
+        }
+
+        SetHighlight(choosableParameters[currentIndex], currentElement, false);
+        currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
+        currentOption = choosableParameters[currentIndex];
+        SetHighlight(currentOption, currentElement, true);
+    }
+
+    void DoHorizontalMovement(int direction)
+    {
+        if (navigationMode == NavigationMode.Presets)
+        {
+            SetPresetHighlight(presetIndex, false);
+            presetIndex = (presetIndex + direction + presetButtons.Length) % presetButtons.Length;
+            SetPresetHighlight(presetIndex, true);
+            return;
+        }
+
+        if (navigationMode != NavigationMode.Parameters) return;
+
+        int newElement = Mathf.Clamp((int)currentElement + direction, 0, 2);
+        if (newElement == (int)currentElement) return;
+
+        SetHighlight(currentOption, currentElement, false);
+        currentElement = (RowElement)newElement;
+        SetHighlight(currentOption, currentElement, true);
+    }
+
+
+    void DoGenreMovement(int direction)
+    {
+        if (navigationMode != NavigationMode.Parameters) return;
+        if (currentElement != RowElement.Category) return;
+
+        ChangeCategory(direction);
+    }
+
     void SetHighlight(GameObject row, RowElement element, bool highlighted)
     {
         Transform bg = row.transform.Find("Background");
@@ -209,11 +325,9 @@ public class ParameterSelection : MonoBehaviour
     {
         vertical = userUIInput.UI.NavigateVertical;
         vertical.Enable();
-        vertical.performed += VerticalMovement;
 
         horizontal = userUIInput.UI.NavigateHorizontal;
         horizontal.Enable();
-        horizontal.performed += HorizontalMovement;
 
         select = userUIInput.UI.Submit;
         select.Enable();
@@ -221,7 +335,6 @@ public class ParameterSelection : MonoBehaviour
 
         selectGenre = userUIInput.UI.SelectGenre;
         selectGenre.Enable();
-        selectGenre.performed += SelectGenre;
     }
 
     void OnDisable()
@@ -230,106 +343,6 @@ public class ParameterSelection : MonoBehaviour
         horizontal.Disable();
         select.Disable();
     }
-
-    void VerticalMovement(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        int direction = 0;
-        if (input.y > 0.5f) direction = -1;
-        else if (input.y < -0.5f) direction = 1;
-        if (direction == 0) return;
-
-        if (navigationMode == NavigationMode.Presets)
-        {
-            if (direction == 1)
-            {
-                SetPresetHighlight(presetIndex, false);
-                navigationMode = NavigationMode.Parameters;
-                SetHighlight(choosableParameters[currentIndex], currentElement, true);
-            }
-            return;
-        }
-
-        bool atTop = currentIndex == 0 && direction == -1;
-        if (atTop)
-        {
-            SetHighlight(choosableParameters[currentIndex], currentElement, false);
-            navigationMode = NavigationMode.Presets;
-            SetPresetHighlight(presetIndex, true);
-            return;
-        }
-
-        SetHighlight(choosableParameters[currentIndex], currentElement, false);
-        currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
-        currentOption = choosableParameters[currentIndex];
-        SetHighlight(currentOption, currentElement, true);
-    }
-
-
-    /*Saving old VerticalMovement in Case of Fallback
-    void VerticalMovement(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        int direction = 0;
-        if (input.y > 0.5f) direction = -1;       // hoch = vorheriger Eintrag
-        else if (input.y < -0.5f) direction = 1;  // runter = nächster Eintrag
-        if (direction == 0) return;
-        // Altes Highlight zurücksetzen
-        SetHighlight(choosableParameters[currentIndex], false);
-        // Index aktualisieren mit Wrap-Around
-        currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
-        currentOption = choosableParameters[currentIndex];
-        // Neues Highlight setzen
-        SetHighlight(currentOption, true);
-        Debug.Log($"Vertical Movement: {currentOption.name} ausgewählt");
-    }*/
-
-    void HorizontalMovement(InputAction.CallbackContext context)
-    {
-        if (navigationMode != NavigationMode.Parameters) return;
-
-        Vector2 input = context.ReadValue<Vector2>();
-        int direction = 0;
-        if (input.x > 0.5f) direction = 1;
-        else if (input.x < -0.5f) direction = -1;
-        if (direction == 0) return;
-
-        int newElement = Mathf.Clamp((int)currentElement + direction, 0, 2);
-        if (newElement == (int)currentElement) return;
-
-        SetHighlight(currentOption, currentElement, false);
-        currentElement = (RowElement)newElement;
-        SetHighlight(currentOption, currentElement, true);
-    }
-
-    void SelectGenre(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        int direction = input.x > 0.5f ? 1 : input.x < -0.5f ? -1 : 0;
-        if (direction == 0) return;
-
-        if (navigationMode == NavigationMode.Presets)
-        {
-            SetPresetHighlight(presetIndex, false);
-            presetIndex = (presetIndex + direction + presetButtons.Length) % presetButtons.Length;
-            SetPresetHighlight(presetIndex, true);
-            return;
-        }
-
-        if (currentElement != RowElement.Category) return;
-
-        ChangeCategory(direction);
-    }
-
-    /*Saving old HorizontalMovement in Case of Fallback
-    void HorizontalMovement(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        if (input.x > 0.5f)
-            ChangeCategory(1);
-        else if (input.x < -0.5f)
-            ChangeCategory(-1);
-    }*/
 
     void ChangeCategory(int direction)
     {
@@ -412,7 +425,6 @@ public class ParameterSelection : MonoBehaviour
                     break;
                 case 0:
                 default:
-                    // FadeOutAndStop() oben reicht bereits aus
                     break;
             }
 
@@ -424,18 +436,6 @@ public class ParameterSelection : MonoBehaviour
                 StopCoroutine(cameraTransitionCoroutine);
 
             cameraTransitionCoroutine = StartCoroutine(TransitionPlayer(category));
-
-            /*Saving old Camera transition code
-            GameObject targetCameraObj = cameras[(int)category];
-            Camera targetCam = targetCameraObj.GetComponent<Camera>();
-            Transform targetTransform = targetCameraObj.GetComponent<Transform>();
-
-            if (targetCam == null) return;
-
-            if (cameraTransitionCoroutine != null)
-                StopCoroutine(cameraTransitionCoroutine);
-
-            cameraTransitionCoroutine = StartCoroutine(TransitionCamera(targetCam, targetTransform));*/
         }
         else if (columnName.name == "VFX")
         {
@@ -499,7 +499,14 @@ public class ParameterSelection : MonoBehaviour
                 columns[i].SetActive();
 
                 // Toggle-UI aktualisieren
-                choosableParameters[i].GetComponentInChildren<Toggle>().isOn = true;
+                if (columns[i].name == "Sound")
+                {
+                    UpdateSoundIcon(columns[i]);
+                }
+                else
+                {
+                    choosableParameters[i].GetComponentInChildren<Toggle>().isOn = true;
+                }
 
                 // Label aktualisieren
                 Transform textTransform = choosableParameters[i].transform.Find("Parameter");
@@ -525,25 +532,6 @@ public class ParameterSelection : MonoBehaviour
         else
             ApplyToWorld(currentColumn, currentColumn.chosenCategory);
     }
-
-    /*Save old Select
-    void Select(InputAction.CallbackContext context)
-    {
-        Debug.Log("Selection");
-        ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
-        currentColumn.Toggle();
-        currentOption.GetComponentInChildren<Toggle>().isOn = currentColumn.isActive;
-        if (!currentColumn.isActive)
-        {
-            // Toggle wurde ausgeschaltet → Empty anwenden
-            ApplyToWorld(currentOption.name, Categories.Empty);
-        }
-        else
-        {
-            // Toggle wurde eingeschaltet → aktuelle Category anwenden
-            ApplyToWorld(currentOption.name, currentColumn.chosenCategory);
-        }
-    }*/
 
     void SetPresetHighlight(int index, bool highlighted)
     {
@@ -623,46 +611,6 @@ public class ParameterSelection : MonoBehaviour
         if (pm != null)
             pm.moveSpeed = playerSettings.movementSpeeds[(int)category];
     }
-
-
-    /* Saving old Camera Transition
-    IEnumerator TransitionCamera(Camera targetCamData, Transform targetTransform)
-    {
-        float duration = 0.5f;
-        float elapsed = 0f;
-
-        Camera mainCam = mainCamera.GetComponent<Camera>();
-        Transform mainCamTransform = mainCamera.transform;
-
-        // Startwerte sichern
-        Vector3 startPos = mainCamTransform.position;
-        Quaternion startRot = mainCamTransform.rotation;
-        float startFOV = mainCam.fieldOfView;
-        float startNear = mainCam.nearClipPlane;
-        float startFar = mainCam.farClipPlane;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = Mathf.Clamp01(elapsed / duration);
-            float smooth = Mathf.SmoothStep(0f, 1f, t); // sanftes Easing
-
-            mainCamTransform.position = Vector3.Lerp(startPos, targetTransform.position, smooth);
-            mainCamTransform.rotation = Quaternion.Slerp(startRot, targetTransform.rotation, smooth);
-            mainCam.fieldOfView = Mathf.Lerp(startFOV, targetCamData.fieldOfView, smooth);
-            mainCam.nearClipPlane = Mathf.Lerp(startNear, targetCamData.nearClipPlane, smooth);
-            mainCam.farClipPlane = Mathf.Lerp(startFar, targetCamData.farClipPlane, smooth);
-
-            yield return null;
-        }
-
-        // Exakte Endwerte setzen
-        mainCamTransform.position = targetTransform.position;
-        mainCamTransform.rotation = targetTransform.rotation;
-        mainCam.fieldOfView = targetCamData.fieldOfView;
-        mainCam.nearClipPlane = targetCamData.nearClipPlane;
-        mainCam.farClipPlane = targetCamData.farClipPlane;
-    } */
 
     private Coroutine vfxTransitionCoroutine;
     private List<GameObject> activeParticles = new List<GameObject>();
