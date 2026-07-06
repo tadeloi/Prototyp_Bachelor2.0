@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.UIElements;
 
 
 public class ParameterSelection : MonoBehaviour
@@ -44,8 +45,7 @@ public class ParameterSelection : MonoBehaviour
     [SerializeField] private GameObject playerObject;
     [SerializeField] private PlayerSettings playerSettings;
     [SerializeField] private GameObject[] particleList = new GameObject[7];
-
-
+    [SerializeField] private GameObject parameterCanvas;
 
     private ParameterRenderer[] parameterRenderSettings = new ParameterRenderer[7];
     private VolumeStorage[] parameterVolumes = new VolumeStorage[7];
@@ -53,17 +53,21 @@ public class ParameterSelection : MonoBehaviour
     private ParameterColumn[] columns;
     private GameObject currentOption;
 
+    [Header("Inputs")]
     public InputSystem_Actions userUIInput;
     private InputAction vertical;
     private InputAction horizontal;
     private InputAction select;
     private InputAction selectGenre;
+    private InputAction closeMenu;
 
 
     private int currentIndex = 0;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
+        playerObject.GetComponent<PlayerMovement>().enabled = false;
+
         currentOption = choosableParameters[0];
         SetHighlight(currentOption, currentElement, true);
         columns = new ParameterColumn[6];
@@ -335,6 +339,10 @@ public class ParameterSelection : MonoBehaviour
 
         selectGenre = userUIInput.UI.SelectGenre;
         selectGenre.Enable();
+
+        closeMenu = userUIInput.UI.Explore;
+        closeMenu.Enable();
+        closeMenu.performed += ExplorationMode;
     }
 
     void OnDisable()
@@ -342,6 +350,7 @@ public class ParameterSelection : MonoBehaviour
         vertical.Disable();
         horizontal.Disable();
         select.Disable();
+        closeMenu.Disable();
     }
 
     void ChangeCategory(int direction)
@@ -505,7 +514,7 @@ public class ParameterSelection : MonoBehaviour
                 }
                 else
                 {
-                    choosableParameters[i].GetComponentInChildren<Toggle>().isOn = true;
+                    choosableParameters[i].GetComponentInChildren<UnityEngine.UI.Toggle>().isOn = true;
                 }
 
                 // Label aktualisieren
@@ -523,8 +532,8 @@ public class ParameterSelection : MonoBehaviour
         }
 
         ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
-        currentColumn.Toggle();
-        Toggle currentToggle = currentOption.GetComponentInChildren<Toggle>();
+        currentColumn.ToggleParameter();
+        UnityEngine.UI.Toggle currentToggle = currentOption.GetComponentInChildren<UnityEngine.UI.Toggle>();
         if (currentToggle != null)
             currentToggle.isOn = currentColumn.IsActive();
         if (!currentColumn.IsActive())
@@ -547,8 +556,8 @@ public class ParameterSelection : MonoBehaviour
     public void ToggleSetting()
     {
         Debug.Log("Toggling...");
-        FindCurrentSelection(currentOption.name).Toggle();
-        currentOption.GetComponentInChildren<Toggle>().isOn = FindCurrentSelection(currentOption.name).IsActive();
+        FindCurrentSelection(currentOption.name).ToggleParameter();
+        currentOption.GetComponentInChildren<UnityEngine.UI.Toggle>().isOn = FindCurrentSelection(currentOption.name).IsActive();
     }
 
 
@@ -684,6 +693,12 @@ public class ParameterSelection : MonoBehaviour
         RenderSettings.fogDensity = settings.fogDensity;
     }
 
+    public void ExplorationMode(InputAction.CallbackContext context)
+    {
+        playerObject.GetComponent<PlayerMovement>().enabled = true;
+        parameterCanvas.SetActive(false);
+        OnDisable();
+    }
 }
 
 class ParameterColumn
@@ -718,7 +733,7 @@ class ParameterColumn
             chosenCategory--;
     }
 
-    public void Toggle()
+    public void ToggleParameter()
     {
         if (this.name == "Sound")
             state = (state + 1) % 4;

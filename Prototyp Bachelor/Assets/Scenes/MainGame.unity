@@ -825,6 +825,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07efaa2de44cd3c4d8e795a4a5e3592e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ParameterSelection
+  initialRepeatDelay: 0.4
+  repeatRate: 0.15
   presetButtons:
   - {fileID: 1325041550}
   - {fileID: 488876172}
@@ -891,6 +893,7 @@ MonoBehaviour:
   - {fileID: 8219833073511277866, guid: 9ecb6492f0ef8bf4290c32f939c7f4e2, type: 3}
   - {fileID: 1208632935208911895, guid: 149e088606dd4c341aa66bbf37b7696d, type: 3}
   - {fileID: 2076434200484422154, guid: 1a6330d21bd41094dbb056ad68fd2ad0, type: 3}
+  parameterCanvas: {fileID: 126481584}
 --- !u!114 &156062363
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6734,6 +6737,7 @@ MonoBehaviour:
   moveSpeed: 40
   groundDrag: 5
   orientation: {fileID: 724380922}
+  ParameterCanvas: {fileID: 126481584}
 --- !u!114 &1422592964
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7454,7 +7458,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1502906478}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 156062362}
+        m_TargetAssemblyTypeName: ParameterSelection, Assembly-CSharp
+        m_MethodName: ExplorationMode
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1502906478
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -172,6 +172,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Menu"",
+                    ""type"": ""Button"",
+                    ""id"": ""ee02a6e5-4f17-46ff-8b10-bcc1f3ef645b"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -559,6 +568,39 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""action"": ""Crouch"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""ffc3d578-1889-463c-9f5f-80df712f00bd"",
+                    ""path"": ""<Gamepad>/start"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""Menu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1dad47f4-77fb-4488-8033-0bdeb17cbe93"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Menu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""51b75761-22c8-43fd-8361-8e5a2fb78d31"",
+                    ""path"": ""<Gamepad>/buttonEast"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""Menu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -670,6 +712,15 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""type"": ""PassThrough"",
                     ""id"": ""84a3da41-e8ce-425d-9757-969f31ab0c03"",
                     ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Explore"",
+                    ""type"": ""Button"",
+                    ""id"": ""5b139c60-c47c-41d6-bd22-4775075b8b98"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -1148,6 +1199,28 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""action"": ""SelectGenre"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""df88038f-97da-40b8-a359-b382a5a467de"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Explore"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""36a57425-8706-42f0-8169-f83f61a44139"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Explore"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -1226,6 +1299,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Previous = m_Player.FindAction("Previous", throwIfNotFound: true);
         m_Player_Next = m_Player.FindAction("Next", throwIfNotFound: true);
         m_Player_Sprint = m_Player.FindAction("Sprint", throwIfNotFound: true);
+        m_Player_Menu = m_Player.FindAction("Menu", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_NavigateVertical = m_UI.FindAction("NavigateVertical", throwIfNotFound: true);
@@ -1240,6 +1314,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_UI_TrackedDevicePosition = m_UI.FindAction("TrackedDevicePosition", throwIfNotFound: true);
         m_UI_TrackedDeviceOrientation = m_UI.FindAction("TrackedDeviceOrientation", throwIfNotFound: true);
         m_UI_SelectGenre = m_UI.FindAction("SelectGenre", throwIfNotFound: true);
+        m_UI_Explore = m_UI.FindAction("Explore", throwIfNotFound: true);
     }
 
     ~@InputSystem_Actions()
@@ -1330,6 +1405,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Previous;
     private readonly InputAction m_Player_Next;
     private readonly InputAction m_Player_Sprint;
+    private readonly InputAction m_Player_Menu;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -1377,6 +1453,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Sprint".
         /// </summary>
         public InputAction @Sprint => m_Wrapper.m_Player_Sprint;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Menu".
+        /// </summary>
+        public InputAction @Menu => m_Wrapper.m_Player_Menu;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1430,6 +1510,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Sprint.started += instance.OnSprint;
             @Sprint.performed += instance.OnSprint;
             @Sprint.canceled += instance.OnSprint;
+            @Menu.started += instance.OnMenu;
+            @Menu.performed += instance.OnMenu;
+            @Menu.canceled += instance.OnMenu;
         }
 
         /// <summary>
@@ -1468,6 +1551,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Sprint.started -= instance.OnSprint;
             @Sprint.performed -= instance.OnSprint;
             @Sprint.canceled -= instance.OnSprint;
+            @Menu.started -= instance.OnMenu;
+            @Menu.performed -= instance.OnMenu;
+            @Menu.canceled -= instance.OnMenu;
         }
 
         /// <summary>
@@ -1517,6 +1603,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_UI_TrackedDevicePosition;
     private readonly InputAction m_UI_TrackedDeviceOrientation;
     private readonly InputAction m_UI_SelectGenre;
+    private readonly InputAction m_UI_Explore;
     /// <summary>
     /// Provides access to input actions defined in input action map "UI".
     /// </summary>
@@ -1576,6 +1663,10 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "UI/SelectGenre".
         /// </summary>
         public InputAction @SelectGenre => m_Wrapper.m_UI_SelectGenre;
+        /// <summary>
+        /// Provides access to the underlying input action "UI/Explore".
+        /// </summary>
+        public InputAction @Explore => m_Wrapper.m_UI_Explore;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1638,6 +1729,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @SelectGenre.started += instance.OnSelectGenre;
             @SelectGenre.performed += instance.OnSelectGenre;
             @SelectGenre.canceled += instance.OnSelectGenre;
+            @Explore.started += instance.OnExplore;
+            @Explore.performed += instance.OnExplore;
+            @Explore.canceled += instance.OnExplore;
         }
 
         /// <summary>
@@ -1685,6 +1779,9 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @SelectGenre.started -= instance.OnSelectGenre;
             @SelectGenre.performed -= instance.OnSelectGenre;
             @SelectGenre.canceled -= instance.OnSelectGenre;
+            @Explore.started -= instance.OnExplore;
+            @Explore.performed -= instance.OnExplore;
+            @Explore.canceled -= instance.OnExplore;
         }
 
         /// <summary>
@@ -1853,6 +1950,13 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSprint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Menu" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMenu(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
@@ -1945,5 +2049,12 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSelectGenre(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Explore" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnExplore(InputAction.CallbackContext context);
     }
 }
