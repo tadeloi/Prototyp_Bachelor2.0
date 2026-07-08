@@ -17,7 +17,11 @@ public class PlayerMovement : MonoBehaviour
     public InputSystem_Actions userGameInput;
     private InputAction movement;
 
+    private InputAction menu;
+
     private Rigidbody rb;
+
+    [SerializeField] private GameObject ParameterCanvas;
 
     void Awake()
     {
@@ -36,11 +40,16 @@ public class PlayerMovement : MonoBehaviour
         movement.Enable();
         movement.performed += ctx => rawInput = ctx.ReadValue<Vector2>();
         movement.canceled += ctx => rawInput = Vector2.zero;
+
+        menu = userGameInput.Player.Menu;
+        menu.Enable();
+        menu.performed += ReturnToMenu;
     }
 
     void OnDisable()
     {
         movement.Disable();
+        menu.Disable();
     }
 
     void Update()
@@ -55,6 +64,12 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(moveSpeed * moveDirection.normalized, ForceMode.Force);
     }
 
+    private void ReturnToMenu(InputAction.CallbackContext context)
+    {
+        ParameterCanvas.SetActive(true);
+        this.OnDisable();
+    }
+
     private void SpeedControl()
     {
         Vector3 flatVel = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
@@ -67,71 +82,3 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 }
-
-
-/* Saving old Code
-
-using UnityEngine;
-using UnityEngine.InputSystem;
-
-[RequireComponent(typeof(Rigidbody))]
-public class PlayerMovement : MonoBehaviour
-{
-    [Header("Movement")]
-    public float moveSpeed;
-    public Transform orientation;
-
-    float horizontalInput;
-    float verticalInput;
-
-    public InputSystem_Actions userGameInput;
-    private InputAction movement;
-
-    Rigidbody rb;
-
-    Vector2 moveDirection;
-
-
-    void Start()
-    {
-        rb = GetComponent<Rigidbody>();
-        rb.freezeRotation = true;
-    }
-
-    // Update is called once per frame
-    void FixedUpdate()
-    {
-
-    }
-
-    void Awake()
-    {
-        userGameInput = new InputSystem_Actions();
-    }
-
-    void OnEnable()
-    {
-        movement = userGameInput.Player.Move;
-        movement.Enable();
-        movement.performed += PlayerMove;
-    }
-
-    void OnDisable()
-    {
-        movement.Disable();
-    }
-
-    void PlayerMove(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        Debug.Log("Movement detected! X: " + input.x + " Y: " + input.y);
-        int horizontalInput = input.x > 0.1f ? 1 : input.x < -0.1f ? -1 : 0;
-        int verticalInput = input.y > 0.1f ? 1 : input.y < -0.1f ? -1 : 0;
-        if (horizontalInput == 0 && verticalInput == 0) return;
-        Debug.Log("Trying to move player");
-        moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
-        Debug.Log("moveDirection: " + moveDirection.ToString());
-        rb.AddForce(10f * moveSpeed * moveDirection.normalized, ForceMode.Force);
-        Debug.Log("Added force to RigidBody");
-    }
-}*/
