@@ -45,7 +45,7 @@ public class SoundManager : MonoBehaviour
         AudioClip parameterClip = clips[(int)parameter];
         AudioSource musicAudioSource = null;
 
-        foreach (AudioSource source in instance.audioSources)
+        foreach(AudioSource source in instance.audioSources)
         {
             if (!source.isPlaying)
             {
@@ -72,16 +72,15 @@ public class SoundManager : MonoBehaviour
     {
         foreach (AudioSource source in instance.audioSources)
         {
-            if (source != null)
+            if(source != null)
             {
                 Debug.Log("Trying to stop all running music");
                 Debug.Log("Currently at sound: " + source.ToString());
-                if (source.isPlaying)
-                {
-                    instance.StartCoroutine(instance.FadeOutCoroutine(source, fadeDuration));
-                }
             }
-
+            if(source.isPlaying)
+            {
+                instance.StartCoroutine(instance.FadeOutCoroutine(source, fadeDuration));
+            }
         }
     }
 
@@ -99,7 +98,7 @@ public class SoundManager : MonoBehaviour
 
         audioSource.Stop();
         audioSource.loop = false;
-        audioSource.volume = startVolume; // Lautstï¿½rke zurï¿½cksetzen fï¿½r spï¿½tere Sounds
+        audioSource.volume = startVolume; // Lautstärke zurücksetzen für spätere Sounds
     }
 
     private IEnumerator FadeOutCoroutine(AudioSource source, float fadeDuration)
@@ -116,7 +115,7 @@ public class SoundManager : MonoBehaviour
 
         source.Stop();
         source.loop = false;
-        source.volume = startVolume; // Lautstï¿½rke zurï¿½cksetzen fï¿½r spï¿½tere Sounds
+        source.volume = startVolume; // Lautstärke zurücksetzen für spätere Sounds
     }
 
 
@@ -126,7 +125,7 @@ public class SoundManager : MonoBehaviour
     {
         string[] names = Enum.GetNames(typeof(SoundType));
         Array.Resize(ref soundList, names.Length);
-        for (int i = 0; i < soundList.Length; i++)
+        for(int i = 0; i < soundList.Length; i++)
         {
             soundList[i].name = names[i];
         }
