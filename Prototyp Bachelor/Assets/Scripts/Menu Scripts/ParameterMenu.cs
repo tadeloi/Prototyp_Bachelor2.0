@@ -26,7 +26,7 @@ public class ParameterMenu : MonoBehaviour
 
     }
 
-    public Categories GetNextMenu(Categories currentOption)
+    /*public Categories GetNextMenu(Categories currentOption)
     {
         int lastIndex = Enum.GetNames(typeof(Categories)).Length - 1;
 
@@ -34,5 +34,5 @@ public class ParameterMenu : MonoBehaviour
             return Categories.Empty;
         else
             return (currentOption+1);
-    }
+    }*/
 }
