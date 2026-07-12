@@ -53,6 +53,8 @@ public class ParameterSelection : MonoBehaviour
     private ParameterColumn[] columns;
     private GameObject currentOption;
 
+    [SerializeField] private SpriteControllerScript spriteController;
+
     [Header("Inputs")]
     public InputSystem_Actions userUIInput;
     private InputAction vertical;
@@ -232,32 +234,40 @@ public class ParameterSelection : MonoBehaviour
             return;
         }
 
+        Debug.Log("Trying to set Highlight OFF for: " + choosableParameters[currentIndex].ToString());
         SetHighlight(choosableParameters[currentIndex], currentElement, false);
+
         currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
         currentOption = choosableParameters[currentIndex];
+        Debug.Log("Setting Highlight ON for: " + choosableParameters[currentIndex].ToString());
         SetHighlight(currentOption, currentElement, true);
     }
 
     void DoHorizontalMovement(int direction)
     {
+        Debug.Log("Moving in horizontal" + direction);
         if (navigationMode == NavigationMode.Presets)
         {
             SetPresetHighlight(presetIndex, false);
             presetIndex = (presetIndex + direction + presetButtons.Length) % presetButtons.Length;
             SetPresetHighlight(presetIndex, true);
-            return;
+
         }
+        else
+        {
+            if (navigationMode != NavigationMode.Parameters) return;
 
-        if (navigationMode != NavigationMode.Parameters) return;
+            int newElement = Mathf.Clamp((int)currentElement + direction, 0, 2);
+            Debug.Log("NewElement: " + (RowElement)newElement + "OldElement: " + currentElement);
+            if (newElement == (int)currentElement) return;
 
-        int newElement = Mathf.Clamp((int)currentElement + direction, 0, 2);
-        if (newElement == (int)currentElement) return;
-
-        SetHighlight(currentOption, currentElement, false);
-        currentElement = (RowElement)newElement;
-        SetHighlight(currentOption, currentElement, true);
+            Debug.Log("Trying to set Highlight OFF for: " + currentOption.ToString());
+            SetHighlight(currentOption, currentElement, false);
+            currentElement = (RowElement)newElement;
+            Debug.Log("Trying to set Highlight ON for: " + currentOption.ToString());
+            SetHighlight(currentOption, currentElement, true);
+        }
     }
-
 
     void DoGenreMovement(int direction)
     {
@@ -269,26 +279,90 @@ public class ParameterSelection : MonoBehaviour
 
     void SetHighlight(GameObject row, RowElement element, bool highlighted)
     {
-        Transform bg = row.transform.Find("Background");
-        if (bg == null) return;
+        //differentiate between TitleImage, Toggle and Parameter selection
+        if ((int)element == 0)
+        {
+            Transform titleImage = row.transform.Find("TitleImage");
+            Selectable selectable = titleImage.GetComponent<Selectable>();
+            if (highlighted)
+            {
+                Debug.Log("Highlighting TitleImage");
+                selectable.OnPointerEnter(null);
+            }
+            else
+            {
+                Debug.Log("Dislighting TitleImage");
+                selectable.OnPointerExit(null);
+            }
+        }
+        else if ((int)element == 1)
+        {
+            if (row.name != "Sound")
+            {
+                Transform toggleObject = row.transform.Find("Toggle");
+                UnityEngine.UI.Toggle selectable = toggleObject.GetComponent<UnityEngine.UI.Toggle>();
+                UpdateToggleSprites(selectable, selectable.isOn);
+                if (highlighted)
+                {
+                    selectable.OnPointerEnter(null);
+                }
+                else
+                {
+                    selectable.OnPointerExit(null);
+                }
+            }
 
-        Selectable selectable = bg.GetComponent<Selectable>();
+        }
+        else if ((int)element == 2)
+        {
+            Transform bg = row.transform.Find("Background");
+            Transform parameter = row.transform.Find("Parameter");
+            if (bg == null || parameter == null)
+            {
+                Debug.LogError("No Background GameObject found");
+                return;
+            }
+
+            Selectable selectable = bg.GetComponent<Selectable>();
+            if (selectable == null)
+            {
+                Debug.LogError("No selectable found");
+                return;
+            }
+
+            if (highlighted)
+            {
+                selectable.OnPointerEnter(null);
+                parameter.GetComponent<TextMeshProUGUI>().color = Color.black;
+            }
+            else
+            {
+                selectable.OnPointerExit(null);
+                parameter.GetComponent<TextMeshProUGUI>().color = Color.white;
+            }
+        }
+    }
+
+    void SetPresetHighlight(int index, bool highlighted)
+    {
+        if (index < 0 || index >= presetButtons.Length) return;
+        Selectable selectable = presetButtons[index].GetComponentInChildren<Selectable>();
+        TextMeshProUGUI tmpText = presetButtons[index].GetComponentInChildren<TextMeshProUGUI>();
         if (selectable == null) return;
-
+        if (tmpText == null) return;
         if (highlighted)
         {
-            Transform target = GetElementTransform(row, element);
-            if (target != null)
-                FitBackgroundToElement(bg.GetComponent<RectTransform>(), target.GetComponent<RectTransform>());
-
             selectable.OnPointerEnter(null);
+            tmpText.color = Color.black;
         }
         else
         {
             selectable.OnPointerExit(null);
+            tmpText.color = Color.white;
         }
     }
 
+    /* Saving old Highlight Code
     void FitBackgroundToElement(RectTransform bgRect, RectTransform targetRect)
     {
         if (bgRect == null || targetRect == null) return;
@@ -300,6 +374,7 @@ public class ParameterSelection : MonoBehaviour
         bgRect.anchoredPosition = targetRect.anchoredPosition;
         bgRect.sizeDelta = targetRect.sizeDelta;
     }
+    
 
 
     Transform GetElementTransform(GameObject row, RowElement element)
@@ -319,6 +394,7 @@ public class ParameterSelection : MonoBehaviour
 
         return t;
     }
+    */
 
     void Awake()
     {
@@ -361,12 +437,16 @@ public class ParameterSelection : MonoBehaviour
             currentColumn.SetNextCategory();
         else
             currentColumn.SetPreviousCategory();
-        // Text-GameObject direkt als Kind suchen statt über GameObject.Find
+        // Text-GameObject als Kind suchen
         Transform textTransform = currentOption.transform.Find("Parameter");
         if (textTransform == null) return;
         TMP_Text label = textTransform.GetComponent<TMP_Text>();
         if (label == null) return;
-        label.text = "<" + currentColumn.chosenCategory.ToString() + ">";
+        label.text = currentColumn.chosenCategory.ToString();
+        if (label.text == "SCIFI")
+        {
+            label.text = "SCI-FI";
+        }
 
         if (currentColumn.IsActive())
             ApplyToWorld(currentColumn, currentColumn.chosenCategory);
@@ -537,20 +617,40 @@ public class ParameterSelection : MonoBehaviour
         if (currentToggle != null)
             currentToggle.isOn = currentColumn.IsActive();
         if (!currentColumn.IsActive())
-            ApplyToWorld(currentColumn, Categories.Empty);
+        {
+            UpdateToggleSprites(currentToggle, false);
+            ApplyToWorld(currentColumn, Categories.LEER);
+        }
         else
+        {
+            UpdateToggleSprites(currentToggle, true);
             ApplyToWorld(currentColumn, currentColumn.chosenCategory);
+        }
+
     }
 
-    void SetPresetHighlight(int index, bool highlighted)
+    private void UpdateToggleSprites(UnityEngine.UI.Toggle optionToggle, bool isToggled)
     {
-        if (index < 0 || index >= presetButtons.Length) return;
-        Selectable selectable = presetButtons[index].GetComponentInChildren<Selectable>();
-        if (selectable == null) return;
-        if (highlighted)
-            selectable.OnPointerEnter(null);
+        if (optionToggle == null)
+        {
+            Debug.LogError("Provided Toggle was null.");
+            return;
+        }
         else
-            selectable.OnPointerExit(null);
+        {
+            if (isToggled)
+            {
+                SpriteState tempState = optionToggle.spriteState;
+                tempState.highlightedSprite = spriteController.selected_toggle_ON;
+                optionToggle.spriteState = tempState;
+            }
+            else
+            {
+                SpriteState tempState = optionToggle.spriteState;
+                tempState.highlightedSprite = spriteController.selected_toggle_OFF;
+                optionToggle.spriteState = tempState;
+            }
+        }
     }
 
     public void ToggleSetting()
@@ -559,7 +659,6 @@ public class ParameterSelection : MonoBehaviour
         FindCurrentSelection(currentOption.name).ToggleParameter();
         currentOption.GetComponentInChildren<UnityEngine.UI.Toggle>().isOn = FindCurrentSelection(currentOption.name).IsActive();
     }
-
 
     public void ChangeParameter()
     {
@@ -655,7 +754,7 @@ public class ParameterSelection : MonoBehaviour
         activeParticles.Clear();
 
         // Neue Partikel sofort spawnen (wenn nicht Empty)
-        if (category != Categories.Empty)
+        if (category != Categories.LEER)
         {
             GameObject prefab = particleList[(int)category];
             if (prefab != null)
