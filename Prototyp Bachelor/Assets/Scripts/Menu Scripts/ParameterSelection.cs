@@ -455,7 +455,7 @@ public class ParameterSelection : MonoBehaviour
 
     void ApplyToWorld(ParameterColumn columnName, Categories category)
     {
-        GameObject world = GameObject.Find("Landschaft_ForUnity");
+        GameObject world = GameObject.Find("Landscape");
         if (world == null) return;
         if (columnName.name == "Color")
         {
@@ -726,7 +726,7 @@ public class ParameterSelection : MonoBehaviour
     private List<Transform> GetAllTreeTops()
     {
         List<Transform> treeTops = new List<Transform>();
-        GameObject world = GameObject.Find("Landschaft_ForUnity");
+        GameObject world = GameObject.Find("Landscape");
         if (world == null) return treeTops;
 
         foreach (Transform child in world.GetComponentsInChildren<Transform>())
