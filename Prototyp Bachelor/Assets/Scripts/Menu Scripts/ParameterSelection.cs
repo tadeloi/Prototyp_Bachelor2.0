@@ -311,6 +311,20 @@ public class ParameterSelection : MonoBehaviour
                     selectable.OnPointerExit(null);
                 }
             }
+            else
+            {
+                UpdateSoundIcon(row, GetSoundState(row));
+                Transform selectableObject = row.transform.Find("State");
+                Selectable selectable = selectableObject.GetComponent<Selectable>();
+                if (highlighted)
+                {
+                    selectable.OnPointerEnter(null);
+                }
+                else
+                {
+                    selectable.OnPointerExit(null);
+                }
+            }
 
         }
         else if ((int)element == 2)
@@ -340,6 +354,39 @@ public class ParameterSelection : MonoBehaviour
                 selectable.OnPointerExit(null);
                 parameter.GetComponent<TextMeshProUGUI>().color = Color.white;
             }
+        }
+    }
+
+    int GetSoundState(GameObject soundRow)
+    {
+        Transform stateTransform = soundRow.transform.Find("State");
+        if (stateTransform == null)
+        {
+            Debug.LogError("StateTransform of GetSoundState failed");
+            return 0;
+        }
+
+        string sourceImageTitle = stateTransform.GetComponent<UnityEngine.UI.Image>().sprite.name;
+        if (sourceImageTitle == "Sound OFF")
+        {
+            return 0;
+        }
+        else if (sourceImageTitle == "Sound Music")
+        {
+            return 1;
+        }
+        else if (sourceImageTitle == "Sound Background")
+        {
+            return 2;
+        }
+        else if (sourceImageTitle == "Sound ON")
+        {
+            return 3;
+        }
+        else
+        {
+            Debug.LogError("Cannot find assigned Sprite Title in SoundSprite");
+            return 0;
         }
     }
 
@@ -545,26 +592,71 @@ public class ParameterSelection : MonoBehaviour
         Transform stateTransform = choosableParameters[index].transform.Find("State");
         if (stateTransform == null) return;
 
-        RawImage icon = stateTransform.GetComponent<RawImage>();
-        SoundSpriteSaver spriteSaver = stateTransform.GetComponent<SoundSpriteSaver>();
-        if (icon == null || spriteSaver == null) return;
+
+        UnityEngine.UI.Image soundImage = stateTransform.GetComponent<UnityEngine.UI.Image>();
+        Selectable soundSelectable = stateTransform.GetComponent<Selectable>();
+
+        if (soundImage == null || soundSelectable == null) return;
+
+        SpriteState soundSpriteState = soundSelectable.spriteState;
 
         switch (columnName.GetState())
         {
             case 1:
-                icon.texture = spriteSaver.musicSprite.texture;
+                soundImage.sprite = spriteController.sound_Music;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Music;
                 break;
             case 2:
-                icon.texture = spriteSaver.backgroundSprite.texture;
+                soundImage.sprite = spriteController.sound_Background;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Background;
                 break;
             case 3:
-                icon.texture = spriteSaver.bothSprite.texture;
+                soundImage.sprite = spriteController.sound_ON;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_ON;
                 break;
             case 0:
             default:
-                icon.texture = spriteSaver.offSprite.texture;
+                soundImage.sprite = spriteController.sound_OFF;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_OFF;
                 break;
         }
+        soundSelectable.spriteState = soundSpriteState;
+    }
+
+    void UpdateSoundIcon(GameObject soundRow, int state)
+    {
+
+        Transform stateTransform = soundRow.transform.Find("State");
+        if (stateTransform == null) return;
+
+        UnityEngine.UI.Image soundImage = stateTransform.GetComponent<UnityEngine.UI.Image>();
+        Selectable soundSelectable = stateTransform.GetComponent<Selectable>();
+
+        if (soundImage == null || soundSelectable == null) return;
+
+        SpriteState soundSpriteState = soundSelectable.spriteState;
+
+        switch (state)
+        {
+            case 1:
+                soundImage.sprite = spriteController.sound_Music;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Music;
+                break;
+            case 2:
+                soundImage.sprite = spriteController.sound_Background;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Background;
+                break;
+            case 3:
+                soundImage.sprite = spriteController.sound_ON;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_ON;
+                break;
+            case 0:
+            default:
+                soundImage.sprite = spriteController.sound_OFF;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_OFF;
+                break;
+        }
+        soundSelectable.spriteState = soundSpriteState;
     }
 
     void Select(InputAction.CallbackContext context)
