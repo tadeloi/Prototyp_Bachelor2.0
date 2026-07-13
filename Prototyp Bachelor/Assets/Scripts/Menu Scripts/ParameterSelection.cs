@@ -64,6 +64,7 @@ public class ParameterSelection : MonoBehaviour
     [SerializeField] private GameObject parameterCanvas;
 
     public ColorController colorController;
+    public MaterialController materialController;
 
     private ParameterRenderer[] parameterRenderSettings = new ParameterRenderer[7];
     private VolumeStorage[] parameterVolumes = new VolumeStorage[7];
@@ -287,7 +288,6 @@ public class ParameterSelection : MonoBehaviour
 
     void DoHorizontalMovement(int direction)
     {
-        Debug.Log("Moving in horizontal" + direction);
         if (navigationMode == NavigationMode.Presets)
         {
             SetPresetHighlight(presetIndex, false);
@@ -329,12 +329,11 @@ public class ParameterSelection : MonoBehaviour
             Selectable selectable = titleImage.GetComponent<Selectable>();
             if (highlighted)
             {
-                Debug.Log("Highlighting TitleImage");
+                SoundManager.PlayVFXSound(0, 0.8f);
                 selectable.OnPointerEnter(null);
             }
             else
             {
-                Debug.Log("Dislighting TitleImage");
                 selectable.OnPointerExit(null);
             }
         }
@@ -347,6 +346,7 @@ public class ParameterSelection : MonoBehaviour
                 UpdateToggleSprites(selectable, selectable.isOn);
                 if (highlighted)
                 {
+                    SoundManager.PlayVFXSound(0, 0.8f);
                     selectable.OnPointerEnter(null);
                 }
                 else
@@ -361,6 +361,7 @@ public class ParameterSelection : MonoBehaviour
                 Selectable selectable = selectableObject.GetComponent<Selectable>();
                 if (highlighted)
                 {
+                    SoundManager.PlayVFXSound(0, 0.8f);
                     selectable.OnPointerEnter(null);
                 }
                 else
@@ -390,6 +391,7 @@ public class ParameterSelection : MonoBehaviour
             if (highlighted)
             {
                 selectable.OnPointerEnter(null);
+                SoundManager.PlayVFXSound(0, 0.8f);
                 parameter.GetComponent<TextMeshProUGUI>().color = Color.black;
             }
             else
@@ -443,6 +445,7 @@ public class ParameterSelection : MonoBehaviour
         if (highlighted)
         {
             selectable.OnPointerEnter(null);
+            SoundManager.PlayVFXSound(0, 0.8f);
             tmpText.color = Color.black;
         }
         else
@@ -480,8 +483,13 @@ public class ParameterSelection : MonoBehaviour
     void OnDisable()
     {
         vertical.Disable();
+
         horizontal.Disable();
+
+        select.performed -= Select;
         select.Disable();
+
+        closeMenu.performed -= ExplorationMode;
         closeMenu.Disable();
     }
 
@@ -489,6 +497,7 @@ public class ParameterSelection : MonoBehaviour
     {
         ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
         if (currentColumn == null) return;
+        SoundManager.PlayVFXSound(1, 0.8f);
         if (direction > 0)
             currentColumn.SetNextCategory();
         else
@@ -598,7 +607,100 @@ public class ParameterSelection : MonoBehaviour
         }
         else if (columnName.name == "Material")
         {
-            Material stumpMaterial = treeStumpMaterials[(int)category];
+            /*possible Tags:
+            Busch1Leaves
+            Busch1Stamm
+            Busch2Leaves
+            Busch2Stamm
+            Busch3Leaves
+            Busch3Stamm
+            Grass
+            Rocks
+            Tree1Leaves
+            Tree1Stamm
+            Tree2Leaves
+            Tree2Stamm
+            Tree3Leaves
+            Tree3Stamm
+            */
+            string currentTag;
+            Color currentColor;
+            foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>())
+            {
+                currentTag = renderer.transform.gameObject.tag;
+                currentColor = renderer.material.color;
+                if (currentTag != "")
+                {
+                    switch (currentTag)
+                    {
+                        case "Busch1Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch1Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch2Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch2Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch3Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch3Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Grass":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.GRASS, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Rocks":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STONES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree1Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree1Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree2Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree2Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree3Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree3Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Landscape":
+                            Debug.Log(renderer.material.ToString());
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LANDSCAPE, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            /*Material stumpMaterial = treeStumpMaterials[(int)category];
             Material leavesMaterial = treeLeavesMaterials[(int)category];
             Material stoneMaterial = stonesMaterials[(int)category];
             Color currentColor;
@@ -623,7 +725,7 @@ public class ParameterSelection : MonoBehaviour
                     renderer.material.color = currentColor;
                 }
 
-            }
+            }*/
         }
         else if (columnName.name == "Light")
         {

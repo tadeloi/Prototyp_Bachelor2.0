@@ -27,7 +27,7 @@ public class VegetationSpawner : MonoBehaviour
             if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, raycastHeight * 2f, groundLayerMask))
             {
                 randomSpawnPosition = hit.point;
-                Debug.Log("Trying to spawn Object");
+                //Debug.Log("Trying to spawn Object");
                 SpawnObject(randomSpawnPosition);
             }
             else
@@ -59,7 +59,7 @@ public class VegetationSpawner : MonoBehaviour
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         spawnPoint.y -= 1.5f;
         GameObject spawned = Instantiate(treePrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
-        FixTags(spawned, "Tree", k);
+        FixTreeBushTags(spawned, "Tree", k);
     }
 
     void SpawnBush(Vector3 spawnPoint)
@@ -68,7 +68,7 @@ public class VegetationSpawner : MonoBehaviour
         //Debug.Log("Trying to spawn Bush of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         GameObject spawned = Instantiate(bushPrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
-        FixTags(spawned, "Busch", k);
+        FixTreeBushTags(spawned, "Busch", k);
     }
 
     void SpawnGrass(Vector3 spawnPoint)
@@ -76,7 +76,8 @@ public class VegetationSpawner : MonoBehaviour
         int k = Random.Range(0, grassPrefabs.Length - 1);
         //Debug.Log("Trying to spawn Bush of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-        Instantiate(grassPrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        GameObject spawned = Instantiate(grassPrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        FixGrassTags(spawned);
     }
 
     void SpawnStone(Vector3 spawnPoint)
@@ -84,10 +85,11 @@ public class VegetationSpawner : MonoBehaviour
         int k = Random.Range(0, stonePrefabs.Length - 1);
         //Debug.Log("Trying to spawn Stone of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-        Instantiate(stonePrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        GameObject spawned = Instantiate(stonePrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        FixStoneTags(spawned);
     }
 
-    void FixTags(GameObject spawnedObject, string type, int index)
+    void FixTreeBushTags(GameObject spawnedObject, string type, int index)
     {
         string stumpTag = $"{type}{index + 1}Stamm";
         string leavesTag = $"{type}{index + 1}Leaves";
@@ -98,6 +100,25 @@ public class VegetationSpawner : MonoBehaviour
                 child.tag = stumpTag;
             else if (child.name.StartsWith("Sphere"))
                 child.tag = leavesTag;
+        }
+    }
+    void FixGrassTags(GameObject spawnedObject)
+    {
+        string stoneTag = "Grass";
+
+        foreach (Transform child in spawnedObject.GetComponentsInChildren<Transform>())
+        {
+            child.tag = stoneTag;
+        }
+    }
+
+    void FixStoneTags(GameObject spawnedObject)
+    {
+        string stoneTag = "Rocks";
+
+        foreach (Transform child in spawnedObject.GetComponentsInChildren<Transform>())
+        {
+            child.tag = stoneTag;
         }
     }
 }

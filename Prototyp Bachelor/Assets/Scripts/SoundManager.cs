@@ -39,6 +39,13 @@ public class SoundManager : MonoBehaviour
         instance.audioSource.PlayOneShot(parameterClip, volume);
     }
 
+    public static void PlayVFXSound(int position, float volume = 1)
+    {
+        AudioClip[] clips = instance.soundList[(int)SoundType.SOUNDS].Sounds;
+        AudioClip parameterClip = clips[position];
+        instance.audioSource.PlayOneShot(parameterClip, volume);
+    }
+
     public static void PlaySoundLooped(Categories parameter, SoundType sound, float volume = 1)
     {
         AudioClip[] clips = instance.soundList[(int)sound].Sounds;

@@ -67,8 +67,13 @@ public class PlayerMovement : MonoBehaviour
 
     void OnDisable()
     {
-        movement.Disable();
+        menu.performed -= ReturnToMenu;
         menu.Disable();
+
+        sprint.performed -= ToggleSprint;
+        sprint.Disable();
+
+        movement.Disable();
     }
 
     void Update()
