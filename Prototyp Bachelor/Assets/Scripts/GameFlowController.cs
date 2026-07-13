@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 
 public class GameFlowController : MonoBehaviour
@@ -24,9 +23,9 @@ public class GameFlowController : MonoBehaviour
     private float idleTimer = 0f;
 
     [Header("Reset-Warnung (Fade to Black)")]
-    public CanvasGroup resetWarningFade; // schwarzes Vollbild-Image mit CanvasGroup
+    public CanvasGroup resetWarningFade;
     public float fadeWarningDuration = 5f;
-    public float fadeCancelSpeed = 8f; // wie schnell es beim Abbruch wieder hell wird (Alpha/Sekunde)
+    public float fadeCancelSpeed = 8f;
 
     private bool isFadingToReset = false;
     private float fadeTimer = 0f;
@@ -48,7 +47,8 @@ public class GameFlowController : MonoBehaviour
         submit.Enable();
         submit.performed += OnSubmit;
 
-        InputSystem.onEvent += OnAnyInputEvent;
+        // Statt InputSystem.onEvent: auf konkrete, bereits im Spiel genutzte Actions lauschen
+        SubscribeToAllRelevantActions();
     }
 
     void OnDisable()
@@ -56,11 +56,42 @@ public class GameFlowController : MonoBehaviour
         submit.performed -= OnSubmit;
         submit.Disable();
 
-        InputSystem.onEvent -= OnAnyInputEvent;
+        UnsubscribeFromAllRelevantActions();
+    }
+
+    private void SubscribeToAllRelevantActions()
+    {
+        // Alle Actions, die im Spiel als "Aktivität" zählen sollen
+        flowInput.Player.Move.performed += OnAnyRelevantInput;
+        flowInput.Player.Sprint.performed += OnAnyRelevantInput;
+        flowInput.Player.Menu.performed += OnAnyRelevantInput;
+        flowInput.UI.NavigateVertical.performed += OnAnyRelevantInput;
+        flowInput.UI.NavigateHorizontal.performed += OnAnyRelevantInput;
+        flowInput.UI.SelectGenre.performed += OnAnyRelevantInput;
+        submit.performed += OnAnyRelevantInput; // Submit zählt ebenfalls als Aktivität
+
+        flowInput.Player.Move.Enable();
+        flowInput.Player.Sprint.Enable();
+        flowInput.Player.Menu.Enable();
+        flowInput.UI.NavigateVertical.Enable();
+        flowInput.UI.NavigateHorizontal.Enable();
+        flowInput.UI.SelectGenre.Enable();
+    }
+
+    private void UnsubscribeFromAllRelevantActions()
+    {
+        flowInput.Player.Move.performed -= OnAnyRelevantInput;
+        flowInput.Player.Sprint.performed -= OnAnyRelevantInput;
+        flowInput.Player.Menu.performed -= OnAnyRelevantInput;
+        flowInput.UI.NavigateVertical.performed -= OnAnyRelevantInput;
+        flowInput.UI.NavigateHorizontal.performed -= OnAnyRelevantInput;
+        flowInput.UI.SelectGenre.performed -= OnAnyRelevantInput;
+        submit.performed -= OnAnyRelevantInput;
     }
 
     void Start()
     {
+        resetWarningFade.alpha = 0.5f;
         EnterStartScreen();
 
         if (resetWarningFade != null)
@@ -90,11 +121,10 @@ public class GameFlowController : MonoBehaviour
         }
     }
 
-    private void OnAnyInputEvent(InputEventPtr eventPtr, InputDevice device)
+    private void OnAnyRelevantInput(InputAction.CallbackContext context)
     {
-        if (device is Mouse) return;
         idleTimer = 0f;
-        Debug.Log($"Detected input!{eventPtr.ToString()}");
+
         if (isFadingToReset)
         {
             CancelFadeWarning();
@@ -115,7 +145,7 @@ public class GameFlowController : MonoBehaviour
         fadeTimer = 0f;
 
         if (resetWarningFade != null)
-            resetWarningFade.blocksRaycasts = true; // verhindert Klicks während der Warnung
+            resetWarningFade.blocksRaycasts = true;
     }
 
     private void UpdateFadeWarning()
@@ -140,7 +170,6 @@ public class GameFlowController : MonoBehaviour
         if (resetWarningFade != null)
         {
             resetWarningFade.blocksRaycasts = false;
-            // Nicht sofort auf 0 springen, sondern zügig ausblenden -> fühlt sich weicher an
             StartCoroutine(FadeOutQuickly());
         }
     }
@@ -177,6 +206,8 @@ public class GameFlowController : MonoBehaviour
 
     private void ResetGame()
     {
+        flowInput.Player.Disable();
+        flowInput.UI.Disable();
         Scene currentScene = SceneManager.GetActiveScene();
         SceneManager.LoadScene(currentScene.buildIndex);
     }

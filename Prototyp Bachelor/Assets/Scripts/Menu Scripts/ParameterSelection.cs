@@ -26,7 +26,7 @@ public class ParameterSelection : MonoBehaviour
     private int lastGenreDirection = 0;
     private float nextGenreInputTime = 0f;
 
-    private enum NavigationMode { Parameters, Presets }
+    private enum NavigationMode { Parameters, Presets, Explore }
     private NavigationMode navigationMode = NavigationMode.Parameters;
     //private int presetIndex = 0;
 
@@ -53,11 +53,11 @@ public class ParameterSelection : MonoBehaviour
     private RowElement currentElement = RowElement.Title;
     [SerializeField] private Material[] categoryColors = new Material[7];
 
-    [SerializeField] private Material[] treeStumpMaterials = new Material[7];
+    /*[SerializeField] private Material[] treeStumpMaterials = new Material[7];
     [SerializeField] private Material[] treeLeavesMaterials = new Material[7];
     [SerializeField] private Material[] stonesMaterials = new Material[7];
     [SerializeField] private GameObject[] cameras = new GameObject[7];
-    [SerializeField] private GameObject mainCamera;
+    [SerializeField] private GameObject mainCamera;*/
     [SerializeField] private GameObject playerObject;
     [SerializeField] private PlayerSettings playerSettings;
     [SerializeField] private GameObject[] particleList = new GameObject[7];
@@ -71,6 +71,7 @@ public class ParameterSelection : MonoBehaviour
 
     private ParameterColumn[] columns;
     private GameObject currentOption;
+    [SerializeField] private GameObject exploreButton;
 
     [SerializeField] private SpriteControllerScript spriteController;
 
@@ -235,6 +236,54 @@ public class ParameterSelection : MonoBehaviour
     {
         if (navigationMode == NavigationMode.Presets)
         {
+            // ... unverändert
+            return;
+        }
+
+        if (navigationMode == NavigationMode.Explore)
+        {
+            if (direction == -1) // Stick nach oben -> zurück zur letzten Parameter-Zeile
+            {
+                SetSimpleButtonHighlight(exploreButton, false);
+                navigationMode = NavigationMode.Parameters;
+                currentIndex = choosableParameters.Length - 1;
+                currentOption = choosableParameters[currentIndex];
+                currentElement = RowElement.Title;
+                SetHighlight(currentOption, currentElement, true);
+            }
+            // direction == 1 -> unterste Position, nichts tun
+            return;
+        }
+
+        bool atTop = currentIndex == 0 && direction == -1;
+        if (atTop)
+        {
+            SetHighlight(choosableParameters[currentIndex], currentElement, false);
+            navigationMode = NavigationMode.Presets;
+            SetPresetHighlight(presetIndex, true);
+            return;
+        }
+
+        bool atBottom = currentIndex == choosableParameters.Length - 1 && direction == 1;
+        if (atBottom)
+        {
+            SetHighlight(choosableParameters[currentIndex], currentElement, false);
+            navigationMode = NavigationMode.Explore;
+            SetSimpleButtonHighlight(exploreButton, true);
+            return;
+        }
+
+        SetHighlight(choosableParameters[currentIndex], currentElement, false);
+        currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
+        currentOption = choosableParameters[currentIndex];
+        SetHighlight(currentOption, currentElement, true);
+    }
+
+    /* Saving old DoVerticalMovement Code for reference, in case of future issues with the new implementation
+    void DoVerticalMovement(int direction)
+    {
+        if (navigationMode == NavigationMode.Presets)
+        {
             if (direction == -1) // Stick nach oben
             {
                 if (presetRow > 0)
@@ -285,9 +334,10 @@ public class ParameterSelection : MonoBehaviour
         Debug.Log("Setting Highlight ON for: " + choosableParameters[currentIndex].ToString());
         SetHighlight(currentOption, currentElement, true);
     }
-
+    */
     void DoHorizontalMovement(int direction)
     {
+        if (navigationMode == NavigationMode.Explore) return;
         if (navigationMode == NavigationMode.Presets)
         {
             SetPresetHighlight(presetIndex, false);
@@ -435,6 +485,33 @@ public class ParameterSelection : MonoBehaviour
         }
     }
 
+    void SetSimpleButtonHighlight(GameObject button, bool highlighted)
+    {
+        if (button == null) return;
+        Selectable selectable = button.GetComponentInChildren<Selectable>();
+        TextMeshProUGUI tmpText = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (selectable == null || tmpText == null) return;
+
+        if (highlighted)
+        {
+            selectable.OnPointerEnter(null);
+            SoundManager.PlayVFXSound(0, 0.8f);
+            tmpText.color = Color.black;
+        }
+        else
+        {
+            selectable.OnPointerExit(null);
+            tmpText.color = Color.white;
+        }
+    }
+
+    void SetPresetHighlight(int index, bool highlighted)
+    {
+        if (index < 0 || index >= presetButtons.Length) return;
+        SetSimpleButtonHighlight(presetButtons[index], highlighted);
+    }
+
+    /* Saving old SetPresetHighlight method for reference, in case of future issues with the new implementation
     void SetPresetHighlight(int index, bool highlighted)
     {
         if (index < 0 || index >= presetButtons.Length) return;
@@ -453,7 +530,7 @@ public class ParameterSelection : MonoBehaviour
             selectable.OnPointerExit(null);
             tmpText.color = Color.white;
         }
-    }
+    }*/
 
     void Awake()
     {
@@ -855,8 +932,14 @@ public class ParameterSelection : MonoBehaviour
             return;
         }
 
+        if (navigationMode == NavigationMode.Explore)
+        {
+            ExplorationMode();
+            return;
+        }
+
         if (currentElement != RowElement.Toggle)
-            return; // Titel & Kategorie reagieren nicht auf Submit
+            return;
 
         void ApplyPreset(Categories category)
         {
@@ -1070,6 +1153,13 @@ public class ParameterSelection : MonoBehaviour
         RenderSettings.fogMode = settings.fogMode;
         RenderSettings.fogColor = settings.fogColor;
         RenderSettings.fogDensity = settings.fogDensity;
+    }
+
+    public void ExplorationMode()
+    {
+        playerObject.GetComponent<PlayerMovement>().enabled = true;
+        parameterCanvas.SetActive(false);
+        OnDisable();
     }
 
     public void ExplorationMode(InputAction.CallbackContext context)

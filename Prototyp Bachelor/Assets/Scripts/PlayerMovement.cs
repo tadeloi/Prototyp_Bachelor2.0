@@ -53,8 +53,8 @@ public class PlayerMovement : MonoBehaviour
     {
         movement = userGameInput.Player.Move;
         movement.Enable();
-        movement.performed += ctx => rawInput = ctx.ReadValue<Vector2>();
-        movement.canceled += ctx => rawInput = Vector2.zero;
+        movement.performed += OnMovementPerformed;
+        movement.canceled += OnMovementCanceled;
 
         menu = userGameInput.Player.Menu;
         menu.Enable();
@@ -67,14 +67,19 @@ public class PlayerMovement : MonoBehaviour
 
     void OnDisable()
     {
+        movement.performed -= OnMovementPerformed;
+        movement.canceled -= OnMovementCanceled;
+        movement.Disable();
+
         menu.performed -= ReturnToMenu;
         menu.Disable();
 
         sprint.performed -= ToggleSprint;
         sprint.Disable();
-
-        movement.Disable();
     }
+
+    private void OnMovementPerformed(InputAction.CallbackContext ctx) => rawInput = ctx.ReadValue<Vector2>();
+    private void OnMovementCanceled(InputAction.CallbackContext ctx) => rawInput = Vector2.zero;
 
     void Update()
     {
@@ -95,7 +100,7 @@ public class PlayerMovement : MonoBehaviour
     private void ReturnToMenu(InputAction.CallbackContext context)
     {
         ParameterCanvas.SetActive(true);
-        this.OnDisable();
+        this.enabled = false;
     }
 
     private void UpdateSprintRamp()
