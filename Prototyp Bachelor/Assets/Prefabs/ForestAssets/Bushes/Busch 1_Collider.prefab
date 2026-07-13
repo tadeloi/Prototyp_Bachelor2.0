@@ -48,13 +48,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8391222552659086748, guid: f61863623a3c5af4ea42ca06087e55cc, type: 3}
+      propertyPath: m_TagString
+      value: Busch1Stamm
+      objectReference: {fileID: 0}
     - target: {fileID: -4683669308469848369, guid: f61863623a3c5af4ea42ca06087e55cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: b570ba2ffb973b146bb3b0be8c6fae7b, type: 2}
+    - target: {fileID: -1018664272722485354, guid: f61863623a3c5af4ea42ca06087e55cc, type: 3}
+      propertyPath: m_TagString
+      value: Busch1Leaves
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: f61863623a3c5af4ea42ca06087e55cc, type: 3}
       propertyPath: m_Name
-      value: Busch 1
+      value: Busch 1_Collider
+      objectReference: {fileID: 0}
+    - target: {fileID: 4424396828587804706, guid: f61863623a3c5af4ea42ca06087e55cc, type: 3}
+      propertyPath: m_TagString
+      value: Busch1Leaves
       objectReference: {fileID: 0}
     - target: {fileID: 6317578925029434746, guid: f61863623a3c5af4ea42ca06087e55cc, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

@@ -55,24 +55,26 @@ public class VegetationSpawner : MonoBehaviour
     void SpawnTree(Vector3 spawnPoint)
     {
         int k = Random.Range(0, treePrefabs.Length - 1);
-        Debug.Log("Trying to spawn Tree of Type: " + k);
+        //Debug.Log("Trying to spawn Tree of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         spawnPoint.y -= 1.5f;
-        Instantiate(treePrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        GameObject spawned = Instantiate(treePrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        FixTags(spawned, "Tree", k);
     }
 
     void SpawnBush(Vector3 spawnPoint)
     {
         int k = Random.Range(0, bushPrefabs.Length - 1);
-        Debug.Log("Trying to spawn Bush of Type: " + k);
+        //Debug.Log("Trying to spawn Bush of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
-        Instantiate(bushPrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        GameObject spawned = Instantiate(bushPrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+        FixTags(spawned, "Busch", k);
     }
 
     void SpawnGrass(Vector3 spawnPoint)
     {
         int k = Random.Range(0, grassPrefabs.Length - 1);
-        Debug.Log("Trying to spawn Bush of Type: " + k);
+        //Debug.Log("Trying to spawn Bush of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         Instantiate(grassPrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
     }
@@ -80,8 +82,22 @@ public class VegetationSpawner : MonoBehaviour
     void SpawnStone(Vector3 spawnPoint)
     {
         int k = Random.Range(0, stonePrefabs.Length - 1);
-        Debug.Log("Trying to spawn Stone of Type: " + k);
+        //Debug.Log("Trying to spawn Stone of Type: " + k);
         Quaternion randomRotation = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
         Instantiate(stonePrefabs[k], spawnPoint, randomRotation, parent: landschaft.transform);
+    }
+
+    void FixTags(GameObject spawnedObject, string type, int index)
+    {
+        string stumpTag = $"{type}{index + 1}Stamm";
+        string leavesTag = $"{type}{index + 1}Leaves";
+
+        foreach (Transform child in spawnedObject.GetComponentsInChildren<Transform>())
+        {
+            if (child.name.StartsWith("Cube"))
+                child.tag = stumpTag;
+            else if (child.name.StartsWith("Sphere"))
+                child.tag = leavesTag;
+        }
     }
 }

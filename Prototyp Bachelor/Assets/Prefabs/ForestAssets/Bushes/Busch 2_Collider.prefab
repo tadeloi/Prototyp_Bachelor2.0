@@ -48,10 +48,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8116613859084990610, guid: bcac8e9e633ca85419012583f8635fd5, type: 3}
+      propertyPath: m_TagString
+      value: Busch2Leaves
+      objectReference: {fileID: 0}
     - target: {fileID: -3216998209466556742, guid: bcac8e9e633ca85419012583f8635fd5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: b570ba2ffb973b146bb3b0be8c6fae7b, type: 2}
+    - target: {fileID: -2932998491564163895, guid: bcac8e9e633ca85419012583f8635fd5, type: 3}
+      propertyPath: m_TagString
+      value: Busch2Leaves
+      objectReference: {fileID: 0}
     - target: {fileID: -1684107799473140416, guid: bcac8e9e633ca85419012583f8635fd5, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -62,7 +70,11 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: b570ba2ffb973b146bb3b0be8c6fae7b, type: 2}
     - target: {fileID: 919132149155446097, guid: bcac8e9e633ca85419012583f8635fd5, type: 3}
       propertyPath: m_Name
-      value: Busch 2
+      value: Busch 2_Collider
+      objectReference: {fileID: 0}
+    - target: {fileID: 8416272007918961125, guid: bcac8e9e633ca85419012583f8635fd5, type: 3}
+      propertyPath: m_TagString
+      value: Busch2Stamm
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

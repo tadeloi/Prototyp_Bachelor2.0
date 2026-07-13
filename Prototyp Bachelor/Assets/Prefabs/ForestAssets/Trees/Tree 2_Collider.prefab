@@ -58,11 +58,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -6148585061576865867, guid: 23eb6db0062f25847b9b10f2a633ad63, type: 3}
       propertyPath: m_TagString
-      value: TreeTop
+      value: Tree2Leaves
       objectReference: {fileID: 0}
     - target: {fileID: -466329591000292508, guid: 23eb6db0062f25847b9b10f2a633ad63, type: 3}
       propertyPath: m_TagString
-      value: TreeTrunk
+      value: Tree2Stamm
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 23eb6db0062f25847b9b10f2a633ad63, type: 3}
       propertyPath: m_Name

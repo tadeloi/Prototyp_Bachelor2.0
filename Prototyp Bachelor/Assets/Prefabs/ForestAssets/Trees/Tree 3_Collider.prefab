@@ -54,7 +54,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -6032153759297429644, guid: 19ebfeb25b8199f40be4b0fdc6688f94, type: 3}
       propertyPath: m_TagString
-      value: TreeTop
+      value: Tree3Leaves
       objectReference: {fileID: 0}
     - target: {fileID: -1120989108687609925, guid: 19ebfeb25b8199f40be4b0fdc6688f94, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -62,7 +62,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: ab6fbc84c5f670e489d117550b419885, type: 2}
     - target: {fileID: -208595431880416365, guid: 19ebfeb25b8199f40be4b0fdc6688f94, type: 3}
       propertyPath: m_TagString
-      value: TreeTrunk
+      value: Tree3Stamm
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 19ebfeb25b8199f40be4b0fdc6688f94, type: 3}
       propertyPath: m_Name
