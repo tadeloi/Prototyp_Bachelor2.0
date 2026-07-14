@@ -65,6 +65,7 @@ public class GameFlowController : MonoBehaviour
         flowInput.Player.Move.performed += OnAnyRelevantInput;
         flowInput.Player.Sprint.performed += OnAnyRelevantInput;
         flowInput.Player.Menu.performed += OnAnyRelevantInput;
+        flowInput.Player.Look.performed += OnAnyRelevantInput;
         flowInput.UI.NavigateVertical.performed += OnAnyRelevantInput;
         flowInput.UI.NavigateHorizontal.performed += OnAnyRelevantInput;
         flowInput.UI.SelectGenre.performed += OnAnyRelevantInput;
@@ -83,6 +84,7 @@ public class GameFlowController : MonoBehaviour
         flowInput.Player.Move.performed -= OnAnyRelevantInput;
         flowInput.Player.Sprint.performed -= OnAnyRelevantInput;
         flowInput.Player.Menu.performed -= OnAnyRelevantInput;
+        flowInput.Player.Look.performed -= OnAnyRelevantInput;
         flowInput.UI.NavigateVertical.performed -= OnAnyRelevantInput;
         flowInput.UI.NavigateHorizontal.performed -= OnAnyRelevantInput;
         flowInput.UI.SelectGenre.performed -= OnAnyRelevantInput;
@@ -107,8 +109,12 @@ public class GameFlowController : MonoBehaviour
         {
             cameraRotationTarget.Rotate(Vector3.up, cameraRotationSpeed * Time.deltaTime, Space.World);
         }
+        else
+        {
+            idleTimer += Time.deltaTime;
+        }
 
-        idleTimer += Time.deltaTime;
+
 
         if (!isFadingToReset && idleTimer >= idleResetTime)
         {
@@ -189,6 +195,8 @@ public class GameFlowController : MonoBehaviour
         currentState = GameState.StartScreen;
         idleTimer = 0f;
 
+        SoundManager.PlayMenuSound(MenuSoundType.MAINMENU, 1f, true);
+
         startPauseCanvas.SetActive(true);
         parameterCanvas.SetActive(false);
 
@@ -199,6 +207,9 @@ public class GameFlowController : MonoBehaviour
     private void EnterParameterMenu()
     {
         currentState = GameState.ParameterMenu;
+
+        SoundManager.StopAllAudioSources();
+        SoundManager.PlayMenuSound(MenuSoundType.STARTGAME, 1f, false);
 
         startPauseCanvas.SetActive(false);
         parameterCanvas.SetActive(true);

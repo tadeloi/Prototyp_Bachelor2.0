@@ -25,6 +25,7 @@ public class ParameterSelection : MonoBehaviour
 
     private int lastGenreDirection = 0;
     private float nextGenreInputTime = 0f;
+    private PlayerMovement playerMovement;
 
     private enum NavigationMode { Parameters, Presets, Explore }
     private NavigationMode navigationMode = NavigationMode.Parameters;
@@ -40,7 +41,6 @@ public class ParameterSelection : MonoBehaviour
 
     private int presetRow = 0;
     private int presetCol = 0;
-    // presetIndex bleibt bestehen, wird aber jetzt aus Row/Col berechnet
     private int presetIndex = 0;
 
     // Entkoppelt die Button-Reihenfolge im Inspector von der Categories-Enum-Reihenfolge
@@ -90,8 +90,6 @@ public class ParameterSelection : MonoBehaviour
     {
         playerObject.GetComponent<PlayerMovement>().enabled = false;
 
-        currentOption = choosableParameters[0];
-        SetHighlight(currentOption, currentElement, true);
         columns = new ParameterColumn[6];
 
         columns[0] = new ParameterColumn("Color");
@@ -144,6 +142,7 @@ public class ParameterSelection : MonoBehaviour
         }
 
         for (int i = 0; i < parameterVolumes.Length; i++)
+
         {
             parameterRenderSettings[(int)((Categories)i)] = new ParameterRenderer(((Categories)i).ToString());
             //Debug.Log(parameterRenderSettings[i].name);
@@ -184,6 +183,11 @@ public class ParameterSelection : MonoBehaviour
 
             }
         }
+
+        playerMovement = playerObject.GetComponent<PlayerMovement>();
+        currentOption = choosableParameters[0];
+        currentElement = RowElement.Title;
+        SetHighlight(currentOption, currentElement, true);
         playerSettings.UpdateArray();
     }
 
@@ -236,7 +240,36 @@ public class ParameterSelection : MonoBehaviour
     {
         if (navigationMode == NavigationMode.Presets)
         {
-            // ... unverändert
+            if (direction == -1) // Stick nach oben
+            {
+                if (presetRow > 0)
+                {
+                    SetPresetHighlight(presetIndex, false);
+                    presetRow--;
+                    presetCol = Mathf.Min(presetCol, presetGrid[presetRow].Length - 1);
+                    presetIndex = presetGrid[presetRow][presetCol];
+                    SetPresetHighlight(presetIndex, true);
+                }
+                // oberste Reihe erreicht -> nichts tun
+            }
+            else // direction == 1, Stick nach unten
+            {
+                if (presetRow < presetGrid.Length - 1)
+                {
+                    SetPresetHighlight(presetIndex, false);
+                    presetRow++;
+                    presetCol = Mathf.Min(presetCol, presetGrid[presetRow].Length - 1);
+                    presetIndex = presetGrid[presetRow][presetCol];
+                    SetPresetHighlight(presetIndex, true);
+                }
+                else
+                {
+                    // unterste Reihe -> zurück in die Parameterliste
+                    SetPresetHighlight(presetIndex, false);
+                    navigationMode = NavigationMode.Parameters;
+                    SetHighlight(choosableParameters[currentIndex], currentElement, true);
+                }
+            }
             return;
         }
 
@@ -815,16 +848,23 @@ public class ParameterSelection : MonoBehaviour
             switch (columnName.GetState())
             {
                 case 1:
+                    playerMovement.soundIsActive = false;
                     SoundManager.PlaySoundLooped(category, SoundType.MUSIC, 0.5f);
                     break;
                 case 2:
+                    playerMovement.soundIsActive = true;
+                    playerMovement.playerCategory = category;
                     SoundManager.PlaySoundLooped(category, SoundType.BACKGROUND);
                     break;
                 case 3:
+                    playerMovement.soundIsActive = true;
+                    playerMovement.playerCategory = category;
                     SoundManager.PlaySoundLooped(category, SoundType.MUSIC, 0.5f);
                     SoundManager.PlaySoundLooped(category, SoundType.BACKGROUND);
                     break;
                 case 0:
+                    playerMovement.soundIsActive = false;
+                    break;
                 default:
                     break;
             }
@@ -944,7 +984,7 @@ public class ParameterSelection : MonoBehaviour
         void ApplyPreset(Categories category)
         {
             string[] columnNames = { "Color", "Material", "Light", "Sound", "Scale", "VFX" };
-
+            SoundManager.PlayVFXSound(3, 0.8f);
             for (int i = 0; i < columns.Length; i++)
             {
                 columns[i].chosenCategory = category;
@@ -982,11 +1022,13 @@ public class ParameterSelection : MonoBehaviour
         if (!currentColumn.IsActive())
         {
             UpdateToggleSprites(currentToggle, false);
+            SoundManager.PlayVFXSound(4, 0.8f);
             ApplyToWorld(currentColumn, Categories.LEER);
         }
         else
         {
             UpdateToggleSprites(currentToggle, true);
+            SoundManager.PlayVFXSound(3, 0.8f);
             ApplyToWorld(currentColumn, currentColumn.chosenCategory);
         }
 
