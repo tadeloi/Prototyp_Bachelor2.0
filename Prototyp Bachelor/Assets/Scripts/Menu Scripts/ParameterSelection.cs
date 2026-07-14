@@ -56,8 +56,8 @@ public class ParameterSelection : MonoBehaviour
     /*[SerializeField] private Material[] treeStumpMaterials = new Material[7];
     [SerializeField] private Material[] treeLeavesMaterials = new Material[7];
     [SerializeField] private Material[] stonesMaterials = new Material[7];
-    [SerializeField] private GameObject[] cameras = new GameObject[7];
-    [SerializeField] private GameObject mainCamera;*/
+    [SerializeField] private GameObject[] cameras = new GameObject[7];*/
+    [SerializeField] private Camera mainCamera;
     [SerializeField] private GameObject playerObject;
     [SerializeField] private PlayerSettings playerSettings;
     [SerializeField] private GameObject[] particleList = new GameObject[7];
@@ -65,7 +65,7 @@ public class ParameterSelection : MonoBehaviour
 
     public ColorController colorController;
     public MaterialController materialController;
-
+    public VFXController vfxController;
     private ParameterRenderer[] parameterRenderSettings = new ParameterRenderer[7];
     private VolumeStorage[] parameterVolumes = new VolumeStorage[7];
 
@@ -883,9 +883,11 @@ public class ParameterSelection : MonoBehaviour
             if (vfxTransitionCoroutine != null)
                 StopCoroutine(vfxTransitionCoroutine);
 
-            vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
+            //vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
 
-            //ApplyRenderSettings(category);
+            RenderTexture rt = vfxController.vfxRenderTextures[(int)category];
+            mainCamera.targetTexture = rt;
+            vfxController.renderImage.texture = rt;
         }
     }
 
