@@ -20,7 +20,7 @@ public class GameFlowController : MonoBehaviour
 
     [Header("Idle Reset")]
     public float idleResetTime = 90f;
-    private float idleTimer = 0f;
+    [SerializeField] private float idleTimer = 0f;
 
     [Header("Reset-Warnung (Fade to Black)")]
     public CanvasGroup resetWarningFade;
@@ -130,6 +130,7 @@ public class GameFlowController : MonoBehaviour
     private void OnAnyRelevantInput(InputAction.CallbackContext context)
     {
         idleTimer = 0f;
+        resetWarningFade.gameObject.SetActive(false);
 
         if (isFadingToReset)
         {
@@ -148,10 +149,14 @@ public class GameFlowController : MonoBehaviour
     private void StartFadeWarning()
     {
         isFadingToReset = true;
+
         fadeTimer = 0f;
 
         if (resetWarningFade != null)
+        {
+            resetWarningFade.gameObject.SetActive(true);
             resetWarningFade.blocksRaycasts = true;
+        }
     }
 
     private void UpdateFadeWarning()

@@ -63,9 +63,7 @@ public class ParameterSelection : MonoBehaviour
     [SerializeField] private GameObject[] particleList = new GameObject[7];
     [SerializeField] private GameObject parameterCanvas;
 
-    public ColorController colorController;
-    public MaterialController materialController;
-    public VFXController vfxController;
+
     private ParameterRenderer[] parameterRenderSettings = new ParameterRenderer[7];
     private VolumeStorage[] parameterVolumes = new VolumeStorage[7];
 
@@ -73,7 +71,7 @@ public class ParameterSelection : MonoBehaviour
     private GameObject currentOption;
     [SerializeField] private GameObject exploreButton;
 
-    [SerializeField] private SpriteControllerScript spriteController;
+
 
     [Header("Inputs")]
     public InputSystem_Actions userUIInput;
@@ -85,6 +83,15 @@ public class ParameterSelection : MonoBehaviour
 
 
     private int currentIndex = 0;
+
+    [Header("Controllers")]
+    public ColorController colorController;
+    public MaterialController materialController;
+    public VFXController vfxController;
+    public LightController lightController;
+    public VolumeController volumeController;
+    [SerializeField] private SpriteControllerScript spriteController;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -884,10 +891,21 @@ public class ParameterSelection : MonoBehaviour
                 StopCoroutine(vfxTransitionCoroutine);
 
             //vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
+            if (category == Categories.RETRO)
+            {
+                RenderTexture rt = vfxController.vfxRenderTextures[(int)category];
+                mainCamera.targetTexture = rt;
+                vfxController.renderImage.texture = rt;
+                vfxController.renderImage.transform.gameObject.SetActive(true);
+            }
+            else
+            {
+                mainCamera.targetTexture = null;
+                vfxController.renderImage.texture = null;
+                vfxController.renderImage.transform.gameObject.SetActive(false);
+            }
 
-            RenderTexture rt = vfxController.vfxRenderTextures[(int)category];
-            mainCamera.targetTexture = rt;
-            vfxController.renderImage.texture = rt;
+            volumeController.ApplyVolumeProfile(category);
         }
     }
 

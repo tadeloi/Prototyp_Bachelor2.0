@@ -89,6 +89,7 @@ public class PlayerMovement : MonoBehaviour
 
         sprint.performed -= ToggleSprint;
         sprint.Disable();
+        userGameInput.Disable();
 
         // Sicherstellen, dass der Footstep-Sound aufhört, falls das Objekt deaktiviert wird.
         if (soundIsPlaying)
@@ -107,7 +108,7 @@ public class PlayerMovement : MonoBehaviour
 
         UpdateSprintRamp(); // aktualisiert currentMaxSpeed
         SpeedControl();     // Sicherheitsnetz, greift z.B. bei Stößen o.ä.
-        UpdateFOV();
+        //UpdateFOV();
         UpdateFootstepSound();
     }
 
@@ -146,7 +147,7 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
-    private void UpdateFOV()
+    /*private void UpdateFOV()
     {
         if (playerCamera == null) return;
 
@@ -164,7 +165,7 @@ public class PlayerMovement : MonoBehaviour
 
 
         playerCamera.fieldOfView = targetFOV;
-    }
+    }*/
 
     /// <summary>
     /// Startet/stoppt bzw. blendet zwischen Walking- und Sprinting-Sound um,

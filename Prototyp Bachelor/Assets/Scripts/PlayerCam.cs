@@ -28,6 +28,7 @@ public class PlayerCam : MonoBehaviour
     private void OnDisable()
     {
         lookAction?.Disable();
+        userGameInput?.Disable();
     }
 
     private void Start()
