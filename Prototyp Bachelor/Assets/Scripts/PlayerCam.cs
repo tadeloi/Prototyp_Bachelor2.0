@@ -1,65 +1,62 @@
-using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerCam : MonoBehaviour
 {
+    [SerializeField] private float sensX = 1f;
+    [SerializeField] private float sensY = 1f;
 
-    [SerializeField] float sensX;
-    [SerializeField] float sensY;
+    [SerializeField] private Transform orientation;
 
-    public Transform orientation;
+    [SerializeField] private Transform playerFlashlight;
 
-    public InputSystem_Actions userGameInput;
-    private InputAction horizontal;
+    private InputSystem_Actions userGameInput;
+    private InputAction lookAction;
 
-    float xRotation;
-    float yRotation;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    private float xRotation;
+    private float yRotation;
+
+    private void Awake()
+    {
+        userGameInput = new InputSystem_Actions();
+    }
+
+    private void OnEnable()
+    {
+        lookAction = userGameInput.Player.Look;
+        lookAction.Enable();
+    }
+
+    private void OnDisable()
+    {
+        lookAction?.Disable();
+        userGameInput?.Disable();
+    }
+
+    private void Start()
     {
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
+        Vector2 input = lookAction.ReadValue<Vector2>();
 
-    }
+        if (input.sqrMagnitude < 0.001f)
+            return;
 
-    void Awake()
-    {
-        userGameInput = new InputSystem_Actions();
-    }
-
-    void OnEnable()
-    {
-        horizontal = userGameInput.Player.Look;
-        horizontal.Enable();
-        horizontal.performed += CameraMovement;
-    }
-
-    void OnDisable()
-    {
-        horizontal.Disable();
-    }
-
-    void CameraMovement(InputAction.CallbackContext context)
-    {
-        Vector2 input = context.ReadValue<Vector2>();
-        int direction = input.x > 0.1f ? 1 : input.x < -0.1f ? -1 : 0;
-        if (direction == 0) return;
-
-        float cameraX = input.x * Time.deltaTime * sensX;
-        float cameraY = input.y * Time.deltaTime * sensY;
+        float cameraX = input.x * sensX * Time.deltaTime;
+        float cameraY = input.y * sensY * Time.deltaTime;
 
         yRotation += cameraX;
         xRotation -= cameraY;
-        xRotation = Mathf.Clamp(xRotation, -5f, 45f);
+        xRotation = Mathf.Clamp(xRotation, -45f, 45f);
 
-        transform.rotation = Quaternion.Euler(xRotation, yRotation, 0);
-        orientation.rotation = Quaternion.Euler(0, yRotation, 0);
+        transform.rotation = Quaternion.Euler(xRotation, yRotation, 0f);
+        orientation.rotation = Quaternion.Euler(0f, yRotation, 0f);
+
+        playerFlashlight.rotation = Quaternion.Euler(orientation.rotation.eulerAngles.x, orientation.rotation.eulerAngles.y, orientation.rotation.eulerAngles.z);
+
     }
-
 }

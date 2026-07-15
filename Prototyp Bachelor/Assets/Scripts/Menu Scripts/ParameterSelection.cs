@@ -1,13 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 using TMPro;
 using UnityEngine.InputSystem;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 
 public class ParameterSelection : MonoBehaviour
@@ -25,10 +22,26 @@ public class ParameterSelection : MonoBehaviour
 
     private int lastGenreDirection = 0;
     private float nextGenreInputTime = 0f;
+    private PlayerMovement playerMovement;
 
-    private enum NavigationMode { Parameters, Presets }
+    private enum NavigationMode { Parameters, Presets, Explore }
     private NavigationMode navigationMode = NavigationMode.Parameters;
+    //private int presetIndex = 0;
+
+    // Grid-Struktur: Reihe für Reihe die flachen Indizes aus presetButtons
+    private static readonly int[][] presetGrid = new int[][]
+    {
+    new int[] { 0, 1, 2 }, // Horror, Cozy, Fantasy
+    new int[] { 3, 4, 5 }, // SciFi, Logik, Retro
+    new int[] { 6 }        // Leer
+    };
+
+    private int presetRow = 0;
+    private int presetCol = 0;
     private int presetIndex = 0;
+
+    // Entkoppelt die Button-Reihenfolge im Inspector von der Categories-Enum-Reihenfolge
+    [SerializeField] private Categories[] presetCategoryMap = new Categories[7];
 
     [SerializeField] private GameObject[] presetButtons = new GameObject[7];
 
@@ -37,23 +50,25 @@ public class ParameterSelection : MonoBehaviour
     private RowElement currentElement = RowElement.Title;
     [SerializeField] private Material[] categoryColors = new Material[7];
 
-    [SerializeField] private Material[] treeStumpMaterials = new Material[7];
+    /*[SerializeField] private Material[] treeStumpMaterials = new Material[7];
     [SerializeField] private Material[] treeLeavesMaterials = new Material[7];
     [SerializeField] private Material[] stonesMaterials = new Material[7];
-    [SerializeField] private GameObject[] cameras = new GameObject[7];
-    [SerializeField] private GameObject mainCamera;
+    [SerializeField] private GameObject[] cameras = new GameObject[7];*/
+    [SerializeField] private Camera mainCamera;
     [SerializeField] private GameObject playerObject;
     [SerializeField] private PlayerSettings playerSettings;
     [SerializeField] private GameObject[] particleList = new GameObject[7];
     [SerializeField] private GameObject parameterCanvas;
+
 
     private ParameterRenderer[] parameterRenderSettings = new ParameterRenderer[7];
     private VolumeStorage[] parameterVolumes = new VolumeStorage[7];
 
     private ParameterColumn[] columns;
     private GameObject currentOption;
+    [SerializeField] private GameObject exploreButton;
 
-    [SerializeField] private SpriteControllerScript spriteController;
+
 
     [Header("Inputs")]
     public InputSystem_Actions userUIInput;
@@ -65,13 +80,22 @@ public class ParameterSelection : MonoBehaviour
 
 
     private int currentIndex = 0;
+
+    [Header("Controllers")]
+    public ColorController colorController;
+    public MaterialController materialController;
+    public VFXController vfxController;
+    public LightController lightController;
+    public VolumeController volumeController;
+    public ScaleController scaleController;
+    [SerializeField] private SpriteControllerScript spriteController;
+
+    private bool initialSelection = true;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         playerObject.GetComponent<PlayerMovement>().enabled = false;
 
-        currentOption = choosableParameters[0];
-        SetHighlight(currentOption, currentElement, true);
         columns = new ParameterColumn[6];
 
         columns[0] = new ParameterColumn("Color");
@@ -94,7 +118,7 @@ public class ParameterSelection : MonoBehaviour
             //Horror
             else if (i == 1)
             {
-                parameterVolumes[i].renderSettings = new RenderSettingsStorage(true, 0.1f, 1.8f, (FogMode)1, new Color(0.1f, 0.12f, 0.1f, 1f), 1f);
+                parameterVolumes[i].renderSettings = new RenderSettingsStorage(true, 0.1f, 1.8f, (FogMode)3, new Color(0.1f, 0.12f, 0.1f, 1f), 0.125f);
             }
             //Cozy
             else if (i == 2)
@@ -124,6 +148,7 @@ public class ParameterSelection : MonoBehaviour
         }
 
         for (int i = 0; i < parameterVolumes.Length; i++)
+
         {
             parameterRenderSettings[(int)((Categories)i)] = new ParameterRenderer(((Categories)i).ToString());
             //Debug.Log(parameterRenderSettings[i].name);
@@ -164,7 +189,13 @@ public class ParameterSelection : MonoBehaviour
 
             }
         }
+
+        playerMovement = playerObject.GetComponent<PlayerMovement>();
+        currentOption = choosableParameters[0];
+        currentElement = RowElement.Title;
+        SetHighlight(currentOption, currentElement, true);
         playerSettings.UpdateArray();
+        initialSelection = false;
     }
 
     void Update()
@@ -216,11 +247,112 @@ public class ParameterSelection : MonoBehaviour
     {
         if (navigationMode == NavigationMode.Presets)
         {
-            if (direction == 1)
+            if (direction == -1) // Stick nach oben
             {
-                SetPresetHighlight(presetIndex, false);
+                if (presetRow > 0)
+                {
+                    SetPresetHighlight(presetIndex, false);
+                    presetRow--;
+                    presetCol = Mathf.Min(presetCol, presetGrid[presetRow].Length - 1);
+                    presetIndex = presetGrid[presetRow][presetCol];
+                    SetPresetHighlight(presetIndex, true);
+                }
+                // oberste Reihe erreicht -> nichts tun
+            }
+            else // direction == 1, Stick nach unten
+            {
+                if (presetRow < presetGrid.Length - 1)
+                {
+                    SetPresetHighlight(presetIndex, false);
+                    presetRow++;
+                    presetCol = Mathf.Min(presetCol, presetGrid[presetRow].Length - 1);
+                    presetIndex = presetGrid[presetRow][presetCol];
+                    SetPresetHighlight(presetIndex, true);
+                }
+                else
+                {
+                    // unterste Reihe -> zurück in die Parameterliste
+                    SetPresetHighlight(presetIndex, false);
+                    navigationMode = NavigationMode.Parameters;
+                    SetHighlight(choosableParameters[currentIndex], currentElement, true);
+                }
+            }
+            return;
+        }
+
+        if (navigationMode == NavigationMode.Explore)
+        {
+            if (direction == -1) // Stick nach oben -> zurück zur letzten Parameter-Zeile
+            {
+                SetSimpleButtonHighlight(exploreButton, false);
                 navigationMode = NavigationMode.Parameters;
-                SetHighlight(choosableParameters[currentIndex], currentElement, true);
+                currentIndex = choosableParameters.Length - 1;
+                currentOption = choosableParameters[currentIndex];
+                currentElement = RowElement.Title;
+                SetHighlight(currentOption, currentElement, true);
+            }
+            // direction == 1 -> unterste Position, nichts tun
+            return;
+        }
+
+        bool atTop = currentIndex == 0 && direction == -1;
+        if (atTop)
+        {
+            SetHighlight(choosableParameters[currentIndex], currentElement, false);
+            navigationMode = NavigationMode.Presets;
+            SetPresetHighlight(presetIndex, true);
+            return;
+        }
+
+        bool atBottom = currentIndex == choosableParameters.Length - 1 && direction == 1;
+        if (atBottom)
+        {
+            SetHighlight(choosableParameters[currentIndex], currentElement, false);
+            navigationMode = NavigationMode.Explore;
+            SetSimpleButtonHighlight(exploreButton, true);
+            return;
+        }
+
+        SetHighlight(choosableParameters[currentIndex], currentElement, false);
+        currentIndex = (currentIndex + direction + choosableParameters.Length) % choosableParameters.Length;
+        currentOption = choosableParameters[currentIndex];
+        SetHighlight(currentOption, currentElement, true);
+    }
+
+    /* Saving old DoVerticalMovement Code for reference, in case of future issues with the new implementation
+    void DoVerticalMovement(int direction)
+    {
+        if (navigationMode == NavigationMode.Presets)
+        {
+            if (direction == -1) // Stick nach oben
+            {
+                if (presetRow > 0)
+                {
+                    SetPresetHighlight(presetIndex, false);
+                    presetRow--;
+                    presetCol = Mathf.Min(presetCol, presetGrid[presetRow].Length - 1);
+                    presetIndex = presetGrid[presetRow][presetCol];
+                    SetPresetHighlight(presetIndex, true);
+                }
+                // oberste Reihe erreicht -> nichts tun
+            }
+            else // direction == 1, Stick nach unten
+            {
+                if (presetRow < presetGrid.Length - 1)
+                {
+                    SetPresetHighlight(presetIndex, false);
+                    presetRow++;
+                    presetCol = Mathf.Min(presetCol, presetGrid[presetRow].Length - 1);
+                    presetIndex = presetGrid[presetRow][presetCol];
+                    SetPresetHighlight(presetIndex, true);
+                }
+                else
+                {
+                    // unterste Reihe -> zurück in die Parameterliste
+                    SetPresetHighlight(presetIndex, false);
+                    navigationMode = NavigationMode.Parameters;
+                    SetHighlight(choosableParameters[currentIndex], currentElement, true);
+                }
             }
             return;
         }
@@ -242,16 +374,17 @@ public class ParameterSelection : MonoBehaviour
         Debug.Log("Setting Highlight ON for: " + choosableParameters[currentIndex].ToString());
         SetHighlight(currentOption, currentElement, true);
     }
-
+    */
     void DoHorizontalMovement(int direction)
     {
-        Debug.Log("Moving in horizontal" + direction);
+        if (navigationMode == NavigationMode.Explore) return;
         if (navigationMode == NavigationMode.Presets)
         {
             SetPresetHighlight(presetIndex, false);
-            presetIndex = (presetIndex + direction + presetButtons.Length) % presetButtons.Length;
+            int[] row = presetGrid[presetRow];
+            presetCol = (presetCol + direction + row.Length) % row.Length;
+            presetIndex = row[presetCol];
             SetPresetHighlight(presetIndex, true);
-
         }
         else
         {
@@ -286,12 +419,12 @@ public class ParameterSelection : MonoBehaviour
             Selectable selectable = titleImage.GetComponent<Selectable>();
             if (highlighted)
             {
-                Debug.Log("Highlighting TitleImage");
+                if (!initialSelection)
+                    SoundManager.PlayVFXSound(0, 0.8f);
                 selectable.OnPointerEnter(null);
             }
             else
             {
-                Debug.Log("Dislighting TitleImage");
                 selectable.OnPointerExit(null);
             }
         }
@@ -304,6 +437,22 @@ public class ParameterSelection : MonoBehaviour
                 UpdateToggleSprites(selectable, selectable.isOn);
                 if (highlighted)
                 {
+                    SoundManager.PlayVFXSound(0, 0.8f);
+                    selectable.OnPointerEnter(null);
+                }
+                else
+                {
+                    selectable.OnPointerExit(null);
+                }
+            }
+            else
+            {
+                UpdateSoundIcon(row, GetSoundState(row));
+                Transform selectableObject = row.transform.Find("State");
+                Selectable selectable = selectableObject.GetComponent<Selectable>();
+                if (highlighted)
+                {
+                    SoundManager.PlayVFXSound(0, 0.8f);
                     selectable.OnPointerEnter(null);
                 }
                 else
@@ -333,6 +482,7 @@ public class ParameterSelection : MonoBehaviour
             if (highlighted)
             {
                 selectable.OnPointerEnter(null);
+                SoundManager.PlayVFXSound(0, 0.8f);
                 parameter.GetComponent<TextMeshProUGUI>().color = Color.black;
             }
             else
@@ -343,6 +493,66 @@ public class ParameterSelection : MonoBehaviour
         }
     }
 
+    int GetSoundState(GameObject soundRow)
+    {
+        Transform stateTransform = soundRow.transform.Find("State");
+        if (stateTransform == null)
+        {
+            Debug.LogError("StateTransform of GetSoundState failed");
+            return 0;
+        }
+
+        string sourceImageTitle = stateTransform.GetComponent<UnityEngine.UI.Image>().sprite.name;
+        if (sourceImageTitle == "Sound OFF")
+        {
+            return 0;
+        }
+        else if (sourceImageTitle == "Sound Music")
+        {
+            return 1;
+        }
+        else if (sourceImageTitle == "Sound Background")
+        {
+            return 2;
+        }
+        else if (sourceImageTitle == "Sound ON")
+        {
+            return 3;
+        }
+        else
+        {
+            Debug.LogError("Cannot find assigned Sprite Title in SoundSprite");
+            return 0;
+        }
+    }
+
+    void SetSimpleButtonHighlight(GameObject button, bool highlighted)
+    {
+        if (button == null) return;
+        Selectable selectable = button.GetComponentInChildren<Selectable>();
+        TextMeshProUGUI tmpText = button.GetComponentInChildren<TextMeshProUGUI>();
+        if (selectable == null || tmpText == null) return;
+
+        if (highlighted)
+        {
+            selectable.OnPointerEnter(null);
+            SoundManager.PlayVFXSound(0, 0.8f);
+            tmpText.color = Color.black;
+        }
+        else
+        {
+            selectable.OnPointerExit(null);
+            tmpText.color = Color.white;
+        }
+    }
+
+    void SetPresetHighlight(int index, bool highlighted)
+    {
+        if (index < 0 || index >= presetButtons.Length) return;
+        SetSimpleButtonHighlight(presetButtons[index], highlighted);
+    }
+
+    /* Saving old SetPresetHighlight method for reference, in case of future issues with the new implementation
     void SetPresetHighlight(int index, bool highlighted)
     {
         if (index < 0 || index >= presetButtons.Length) return;
@@ -353,6 +563,7 @@ public class ParameterSelection : MonoBehaviour
         if (highlighted)
         {
             selectable.OnPointerEnter(null);
+            SoundManager.PlayVFXSound(0, 0.8f);
             tmpText.color = Color.black;
         }
         else
@@ -360,41 +571,7 @@ public class ParameterSelection : MonoBehaviour
             selectable.OnPointerExit(null);
             tmpText.color = Color.white;
         }
-    }
-
-    /* Saving old Highlight Code
-    void FitBackgroundToElement(RectTransform bgRect, RectTransform targetRect)
-    {
-        if (bgRect == null || targetRect == null) return;
-
-        // Background und Ziel-Element liegen im selben Parent, daher reicht das direkte Kopieren
-        bgRect.anchorMin = targetRect.anchorMin;
-        bgRect.anchorMax = targetRect.anchorMax;
-        bgRect.pivot = targetRect.pivot;
-        bgRect.anchoredPosition = targetRect.anchoredPosition;
-        bgRect.sizeDelta = targetRect.sizeDelta;
-    }
-    
-
-
-    Transform GetElementTransform(GameObject row, RowElement element)
-    {
-        string childName = element switch
-        {
-            RowElement.Title => "Text",
-            RowElement.Toggle => "Toggle",
-            RowElement.Category => "Parameter",
-            _ => null
-        };
-        if (childName == null) return null;
-
-        Transform t = row.transform.Find(childName);
-        if (t == null && element == RowElement.Toggle)
-            t = row.transform.Find("State"); // Fallback für die Sound-Zeile
-
-        return t;
-    }
-    */
+    }*/
 
     void Awake()
     {
@@ -424,8 +601,13 @@ public class ParameterSelection : MonoBehaviour
     void OnDisable()
     {
         vertical.Disable();
+
         horizontal.Disable();
+
+        select.performed -= Select;
         select.Disable();
+
+        closeMenu.performed -= ExplorationMode;
         closeMenu.Disable();
     }
 
@@ -433,6 +615,7 @@ public class ParameterSelection : MonoBehaviour
     {
         ParameterColumn currentColumn = FindCurrentSelection(currentOption.name);
         if (currentColumn == null) return;
+        SoundManager.PlayVFXSound(1, 0.8f);
         if (direction > 0)
             currentColumn.SetNextCategory();
         else
@@ -459,13 +642,183 @@ public class ParameterSelection : MonoBehaviour
         if (world == null) return;
         if (columnName.name == "Color")
         {
-            Material selectedColor = categoryColors[(int)category];
+            /*possible Tags:
+            Busch1Leaves
+            Busch1Stamm
+            Busch2Leaves
+            Busch2Stamm
+            Busch3Leaves
+            Busch3Stamm
+            Grass
+            Rocks
+            Tree1Leaves
+            Tree1Stamm
+            Tree2Leaves
+            Tree2Stamm
+            Tree3Leaves
+            Tree3Stamm
+            */
+            string currentTag;
             foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>())
-                renderer.material.color = selectedColor.color;
+            {
+                currentTag = renderer.transform.gameObject.tag;
+                if (currentTag != "")
+                {
+                    switch (currentTag)
+                    {
+                        case "Busch1Leaves":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.BUSH1LEAVES, category).color;
+                            break;
+                        case "Busch1Stamm":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.BUSH1STUMP, category).color;
+                            break;
+                        case "Busch2Leaves":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.BUSH2LEAVES, category).color;
+                            break;
+                        case "Busch2Stamm":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.BUSH2STUMP, category).color;
+                            break;
+                        case "Busch3Leaves":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.BUSH3LEAVES, category).color;
+                            break;
+                        case "Busch3Stamm":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.BUSH3STUMP, category).color;
+                            break;
+                        case "Grass":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.GRASS, category).color;
+                            break;
+                        case "Rocks":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.STONES, category).color;
+                            break;
+                        case "Tree1Leaves":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.TREE1LEAVES, category).color;
+                            break;
+                        case "Tree1Stamm":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.TREE1STUMP, category).color;
+                            break;
+                        case "Tree2Leaves":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.TREE2LEAVES, category).color;
+                            break;
+                        case "Tree2Stamm":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.TREE2STUMP, category).color;
+                            break;
+                        case "Tree3Leaves":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.TREE3LEAVES, category).color;
+                            break;
+                        case "Tree3Stamm":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.TREE3STUMP, category).color;
+                            break;
+                        case "Landscape":
+                            renderer.material.color = colorController.GetGenreMaterial(ColorParameter.LANDSCAPE, category).color;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+
+
+            /*Material selectedColor = categoryColors[(int)category];
+            foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>())
+                renderer.material.color = selectedColor.color;*/
         }
         else if (columnName.name == "Material")
         {
-            Material stumpMaterial = treeStumpMaterials[(int)category];
+            /*possible Tags:
+            Busch1Leaves
+            Busch1Stamm
+            Busch2Leaves
+            Busch2Stamm
+            Busch3Leaves
+            Busch3Stamm
+            Grass
+            Rocks
+            Tree1Leaves
+            Tree1Stamm
+            Tree2Leaves
+            Tree2Stamm
+            Tree3Leaves
+            Tree3Stamm
+            */
+            string currentTag;
+            Color currentColor;
+            foreach (MeshRenderer renderer in world.GetComponentsInChildren<MeshRenderer>())
+            {
+                currentTag = renderer.transform.gameObject.tag;
+                currentColor = renderer.material.color;
+                if (currentTag != "")
+                {
+                    switch (currentTag)
+                    {
+                        case "Busch1Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch1Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch2Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch2Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch3Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Busch3Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Grass":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.GRASS, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Rocks":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STONES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree1Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree1Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree2Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree2Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.STUMP, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree3Leaves":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Tree3Stamm":
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LEAVES, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        case "Landscape":
+                            Debug.Log(renderer.material.ToString());
+                            renderer.material = materialController.GetGenreMaterial(MaterialParameter.LANDSCAPE, category);
+                            renderer.material.color = currentColor;
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            /*Material stumpMaterial = treeStumpMaterials[(int)category];
             Material leavesMaterial = treeLeavesMaterials[(int)category];
             Material stoneMaterial = stonesMaterials[(int)category];
             Color currentColor;
@@ -490,11 +843,11 @@ public class ParameterSelection : MonoBehaviour
                     renderer.material.color = currentColor;
                 }
 
-            }
+            }*/
         }
         else if (columnName.name == "Light")
         {
-
+            lightController.UpdateDirectionalLight(category);
         }
         else if (columnName.name == "Sound")
         {
@@ -503,16 +856,23 @@ public class ParameterSelection : MonoBehaviour
             switch (columnName.GetState())
             {
                 case 1:
+                    playerMovement.soundIsActive = false;
                     SoundManager.PlaySoundLooped(category, SoundType.MUSIC, 0.5f);
                     break;
                 case 2:
+                    playerMovement.soundIsActive = true;
+                    playerMovement.playerCategory = category;
                     SoundManager.PlaySoundLooped(category, SoundType.BACKGROUND);
                     break;
                 case 3:
+                    playerMovement.soundIsActive = true;
+                    playerMovement.playerCategory = category;
                     SoundManager.PlaySoundLooped(category, SoundType.MUSIC, 0.5f);
                     SoundManager.PlaySoundLooped(category, SoundType.BACKGROUND);
                     break;
                 case 0:
+                    playerMovement.soundIsActive = false;
+                    break;
                 default:
                     break;
             }
@@ -521,19 +881,34 @@ public class ParameterSelection : MonoBehaviour
         }
         else if (columnName.name == "Scale")
         {
-            if (cameraTransitionCoroutine != null)
-                StopCoroutine(cameraTransitionCoroutine);
-
-            cameraTransitionCoroutine = StartCoroutine(TransitionPlayer(category));
+            scaleController.UpdateScale(category);
         }
         else if (columnName.name == "VFX")
         {
-            if (vfxTransitionCoroutine != null)
-                StopCoroutine(vfxTransitionCoroutine);
+            if (category == Categories.HORROR)
+            {
+                ApplyRenderSettings(category);
+            }
+            else
+            {
+                ApplyRenderSettings(Categories.LEER);
+            }
 
-            vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
+            if (category == Categories.RETRO)
+            {
+                RenderTexture rt = vfxController.vfxRenderTextures[(int)category];
+                mainCamera.targetTexture = rt;
+                vfxController.renderImage.texture = rt;
+                vfxController.renderImage.transform.gameObject.SetActive(true);
+            }
+            else
+            {
+                mainCamera.targetTexture = null;
+                vfxController.renderImage.texture = null;
+                vfxController.renderImage.transform.gameObject.SetActive(false);
+            }
 
-            //ApplyRenderSettings(category);
+            volumeController.ApplyVolumeProfile(category);
         }
     }
 
@@ -545,43 +920,95 @@ public class ParameterSelection : MonoBehaviour
         Transform stateTransform = choosableParameters[index].transform.Find("State");
         if (stateTransform == null) return;
 
-        RawImage icon = stateTransform.GetComponent<RawImage>();
-        SoundSpriteSaver spriteSaver = stateTransform.GetComponent<SoundSpriteSaver>();
-        if (icon == null || spriteSaver == null) return;
+
+        UnityEngine.UI.Image soundImage = stateTransform.GetComponent<UnityEngine.UI.Image>();
+        Selectable soundSelectable = stateTransform.GetComponent<Selectable>();
+
+        if (soundImage == null || soundSelectable == null) return;
+
+        SpriteState soundSpriteState = soundSelectable.spriteState;
 
         switch (columnName.GetState())
         {
             case 1:
-                icon.texture = spriteSaver.musicSprite.texture;
+                soundImage.sprite = spriteController.sound_Music;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Music;
                 break;
             case 2:
-                icon.texture = spriteSaver.backgroundSprite.texture;
+                soundImage.sprite = spriteController.sound_Background;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Background;
                 break;
             case 3:
-                icon.texture = spriteSaver.bothSprite.texture;
+                soundImage.sprite = spriteController.sound_ON;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_ON;
                 break;
             case 0:
             default:
-                icon.texture = spriteSaver.offSprite.texture;
+                soundImage.sprite = spriteController.sound_OFF;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_OFF;
                 break;
         }
+        soundSelectable.spriteState = soundSpriteState;
+    }
+
+    void UpdateSoundIcon(GameObject soundRow, int state)
+    {
+
+        Transform stateTransform = soundRow.transform.Find("State");
+        if (stateTransform == null) return;
+
+        UnityEngine.UI.Image soundImage = stateTransform.GetComponent<UnityEngine.UI.Image>();
+        Selectable soundSelectable = stateTransform.GetComponent<Selectable>();
+
+        if (soundImage == null || soundSelectable == null) return;
+
+        SpriteState soundSpriteState = soundSelectable.spriteState;
+
+        switch (state)
+        {
+            case 1:
+                soundImage.sprite = spriteController.sound_Music;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Music;
+                break;
+            case 2:
+                soundImage.sprite = spriteController.sound_Background;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_Background;
+                break;
+            case 3:
+                soundImage.sprite = spriteController.sound_ON;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_ON;
+                break;
+            case 0:
+            default:
+                soundImage.sprite = spriteController.sound_OFF;
+                soundSpriteState.highlightedSprite = spriteController.selected_sound_OFF;
+                break;
+        }
+        soundSelectable.spriteState = soundSpriteState;
     }
 
     void Select(InputAction.CallbackContext context)
     {
         if (navigationMode == NavigationMode.Presets)
         {
-            ApplyPreset((Categories)presetIndex);
+            ApplyPreset(presetCategoryMap[presetIndex]);
+            return;
+        }
+
+        if (navigationMode == NavigationMode.Explore)
+        {
+            SoundManager.PlayVFXSound(1, 1f);
+            ExplorationMode();
             return;
         }
 
         if (currentElement != RowElement.Toggle)
-            return; // Titel & Kategorie reagieren nicht auf Submit
+            return;
 
         void ApplyPreset(Categories category)
         {
             string[] columnNames = { "Color", "Material", "Light", "Sound", "Scale", "VFX" };
-
+            SoundManager.PlayVFXSound(3, 0.8f);
             for (int i = 0; i < columns.Length; i++)
             {
                 columns[i].chosenCategory = category;
@@ -603,7 +1030,7 @@ public class ParameterSelection : MonoBehaviour
                 {
                     TMP_Text label = textTransform.GetComponent<TMP_Text>();
                     if (label != null)
-                        label.text = "<" + category.ToString() + ">";
+                        label.text = category.ToString();
                 }
 
                 // Auf die Welt anwenden
@@ -619,11 +1046,13 @@ public class ParameterSelection : MonoBehaviour
         if (!currentColumn.IsActive())
         {
             UpdateToggleSprites(currentToggle, false);
+            SoundManager.PlayVFXSound(4, 0.8f);
             ApplyToWorld(currentColumn, Categories.LEER);
         }
         else
         {
             UpdateToggleSprites(currentToggle, true);
+            SoundManager.PlayVFXSound(3, 0.8f);
             ApplyToWorld(currentColumn, currentColumn.chosenCategory);
         }
 
@@ -633,7 +1062,7 @@ public class ParameterSelection : MonoBehaviour
     {
         if (optionToggle == null)
         {
-            Debug.LogError("Provided Toggle was null.");
+            Debug.LogWarning("Provided Toggle was null.");
             return;
         }
         else
@@ -739,6 +1168,7 @@ public class ParameterSelection : MonoBehaviour
 
     IEnumerator TransitionVFX(Categories category)
     {
+        /*
         // Alte Partikel: Emission stoppen, nach Lifetime selbst zerstören
         foreach (GameObject ps in activeParticles)
         {
@@ -753,7 +1183,7 @@ public class ParameterSelection : MonoBehaviour
         }
         activeParticles.Clear();
 
-        // Neue Partikel sofort spawnen (wenn nicht Empty)
+        // Neue Partikel sofort spawnen (wenn nicht Empty)*/
         if (category != Categories.LEER)
         {
             GameObject prefab = particleList[(int)category];
@@ -790,6 +1220,13 @@ public class ParameterSelection : MonoBehaviour
         RenderSettings.fogMode = settings.fogMode;
         RenderSettings.fogColor = settings.fogColor;
         RenderSettings.fogDensity = settings.fogDensity;
+    }
+
+    public void ExplorationMode()
+    {
+        playerObject.GetComponent<PlayerMovement>().enabled = true;
+        parameterCanvas.SetActive(false);
+        OnDisable();
     }
 
     public void ExplorationMode(InputAction.CallbackContext context)
