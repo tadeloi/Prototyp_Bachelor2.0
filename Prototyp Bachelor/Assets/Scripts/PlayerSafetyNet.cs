@@ -5,7 +5,7 @@ public class PlayerSafetyNet : MonoBehaviour
 {
     [SerializeField] private GameObject playerObject;
     [Tooltip("Y-Position, auf die der Spieler nach dem Auffangen gesetzt wird.")]
-    [SerializeField] private float resetHeight = 1f;
+    [SerializeField] private float resetHeight = 10f;
 
     private Rigidbody playerRigidbody;
 

@@ -85,6 +85,8 @@ public class SoundManager : MonoBehaviour
                 break;
             }
         }
+        if (menuAudioSource == null)
+            menuAudioSource = instance.audioSources[0]; // Fallback: Verwende die erste AudioSource, wenn alle belegt sind
 
         menuAudioSource.clip = parameterClip;
         menuAudioSource.volume = volume;

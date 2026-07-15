@@ -39,6 +39,7 @@ public class GameFlowController : MonoBehaviour
     {
         flowInput = new InputSystem_Actions();
         playerMovement = playerObject.GetComponent<PlayerMovement>();
+        Application.targetFrameRate = 60;
     }
 
     void OnEnable()
@@ -93,7 +94,7 @@ public class GameFlowController : MonoBehaviour
 
     void Start()
     {
-        resetWarningFade.alpha = 0.5f;
+        resetWarningFade.alpha = 0f;
         EnterStartScreen();
 
         if (resetWarningFade != null)
@@ -108,6 +109,7 @@ public class GameFlowController : MonoBehaviour
         if (currentState == GameState.StartScreen && cameraRotationTarget != null)
         {
             cameraRotationTarget.Rotate(Vector3.up, cameraRotationSpeed * Time.deltaTime, Space.World);
+            playerObject.transform.Find("Orientation").transform.Rotate(cameraRotationTarget.rotation.eulerAngles);
         }
         else
         {
@@ -130,7 +132,6 @@ public class GameFlowController : MonoBehaviour
     private void OnAnyRelevantInput(InputAction.CallbackContext context)
     {
         idleTimer = 0f;
-        resetWarningFade.gameObject.SetActive(false);
 
         if (isFadingToReset)
         {
@@ -154,7 +155,6 @@ public class GameFlowController : MonoBehaviour
 
         if (resetWarningFade != null)
         {
-            resetWarningFade.gameObject.SetActive(true);
             resetWarningFade.blocksRaycasts = true;
         }
     }
@@ -222,6 +222,7 @@ public class GameFlowController : MonoBehaviour
 
     private void ResetGame()
     {
+        parameterCanvas.transform.GetComponentInChildren<ParameterSelection>().userUIInput.Disable();
         flowInput.Player.Disable();
         flowInput.UI.Disable();
         Scene currentScene = SceneManager.GetActiveScene();

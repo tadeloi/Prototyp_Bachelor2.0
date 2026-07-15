@@ -8,6 +8,8 @@ public class PlayerCam : MonoBehaviour
 
     [SerializeField] private Transform orientation;
 
+    [SerializeField] private Transform playerFlashlight;
+
     private InputSystem_Actions userGameInput;
     private InputAction lookAction;
 
@@ -53,5 +55,8 @@ public class PlayerCam : MonoBehaviour
 
         transform.rotation = Quaternion.Euler(xRotation, yRotation, 0f);
         orientation.rotation = Quaternion.Euler(0f, yRotation, 0f);
+
+        playerFlashlight.rotation = Quaternion.Euler(orientation.rotation.eulerAngles.x, orientation.rotation.eulerAngles.y, orientation.rotation.eulerAngles.z);
+
     }
 }

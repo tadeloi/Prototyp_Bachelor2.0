@@ -1,13 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.Rendering;
-using UnityEngine.Rendering.HighDefinition;
 using TMPro;
 using UnityEngine.InputSystem;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using UnityEngine.UIElements;
 
 
 public class ParameterSelection : MonoBehaviour
@@ -90,8 +87,10 @@ public class ParameterSelection : MonoBehaviour
     public VFXController vfxController;
     public LightController lightController;
     public VolumeController volumeController;
+    public ScaleController scaleController;
     [SerializeField] private SpriteControllerScript spriteController;
 
+    private bool initialSelection = true;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -119,7 +118,7 @@ public class ParameterSelection : MonoBehaviour
             //Horror
             else if (i == 1)
             {
-                parameterVolumes[i].renderSettings = new RenderSettingsStorage(true, 0.1f, 1.8f, (FogMode)1, new Color(0.1f, 0.12f, 0.1f, 1f), 1f);
+                parameterVolumes[i].renderSettings = new RenderSettingsStorage(true, 0.1f, 1.8f, (FogMode)3, new Color(0.1f, 0.12f, 0.1f, 1f), 0.125f);
             }
             //Cozy
             else if (i == 2)
@@ -196,6 +195,7 @@ public class ParameterSelection : MonoBehaviour
         currentElement = RowElement.Title;
         SetHighlight(currentOption, currentElement, true);
         playerSettings.UpdateArray();
+        initialSelection = false;
     }
 
     void Update()
@@ -419,7 +419,8 @@ public class ParameterSelection : MonoBehaviour
             Selectable selectable = titleImage.GetComponent<Selectable>();
             if (highlighted)
             {
-                SoundManager.PlayVFXSound(0, 0.8f);
+                if (!initialSelection)
+                    SoundManager.PlayVFXSound(0, 0.8f);
                 selectable.OnPointerEnter(null);
             }
             else
@@ -846,7 +847,7 @@ public class ParameterSelection : MonoBehaviour
         }
         else if (columnName.name == "Light")
         {
-
+            lightController.UpdateDirectionalLight(category);
         }
         else if (columnName.name == "Sound")
         {
@@ -880,17 +881,19 @@ public class ParameterSelection : MonoBehaviour
         }
         else if (columnName.name == "Scale")
         {
-            if (cameraTransitionCoroutine != null)
-                StopCoroutine(cameraTransitionCoroutine);
-
-            cameraTransitionCoroutine = StartCoroutine(TransitionPlayer(category));
+            scaleController.UpdateScale(category);
         }
         else if (columnName.name == "VFX")
         {
-            if (vfxTransitionCoroutine != null)
-                StopCoroutine(vfxTransitionCoroutine);
+            if (category == Categories.HORROR)
+            {
+                ApplyRenderSettings(category);
+            }
+            else
+            {
+                ApplyRenderSettings(Categories.LEER);
+            }
 
-            //vfxTransitionCoroutine = StartCoroutine(TransitionVFX(category));
             if (category == Categories.RETRO)
             {
                 RenderTexture rt = vfxController.vfxRenderTextures[(int)category];
@@ -994,6 +997,7 @@ public class ParameterSelection : MonoBehaviour
 
         if (navigationMode == NavigationMode.Explore)
         {
+            SoundManager.PlayVFXSound(1, 1f);
             ExplorationMode();
             return;
         }
@@ -1026,7 +1030,7 @@ public class ParameterSelection : MonoBehaviour
                 {
                     TMP_Text label = textTransform.GetComponent<TMP_Text>();
                     if (label != null)
-                        label.text = "<" + category.ToString() + ">";
+                        label.text = category.ToString();
                 }
 
                 // Auf die Welt anwenden
@@ -1058,7 +1062,7 @@ public class ParameterSelection : MonoBehaviour
     {
         if (optionToggle == null)
         {
-            Debug.LogError("Provided Toggle was null.");
+            Debug.LogWarning("Provided Toggle was null.");
             return;
         }
         else
@@ -1164,6 +1168,7 @@ public class ParameterSelection : MonoBehaviour
 
     IEnumerator TransitionVFX(Categories category)
     {
+        /*
         // Alte Partikel: Emission stoppen, nach Lifetime selbst zerstören
         foreach (GameObject ps in activeParticles)
         {
@@ -1178,7 +1183,7 @@ public class ParameterSelection : MonoBehaviour
         }
         activeParticles.Clear();
 
-        // Neue Partikel sofort spawnen (wenn nicht Empty)
+        // Neue Partikel sofort spawnen (wenn nicht Empty)*/
         if (category != Categories.LEER)
         {
             GameObject prefab = particleList[(int)category];

@@ -32,7 +32,6 @@ public class PlayerMovement : MonoBehaviour
 
     private bool sprinting;
     private float sprintRampTimer = 0f;
-    private float fovRampTimer = 0f;
     private float currentMaxSpeed; // wird pro Frame berechnet, in FixedUpdate genutzt
 
     public InputSystem_Actions userGameInput;
@@ -121,6 +120,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void ReturnToMenu(InputAction.CallbackContext context)
     {
+        SoundManager.PlayVFXSound(2, 1f);
         ParameterCanvas.SetActive(true);
         this.enabled = false;
     }
