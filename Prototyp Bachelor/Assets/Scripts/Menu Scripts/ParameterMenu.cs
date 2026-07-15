@@ -3,13 +3,13 @@ using UnityEngine;
 
 public enum Categories
 {
-    Empty = 0,
-    Horror = 1,
-    Cozy = 2,
-    Fantasy = 3,
-    SciFi = 4,
-    Logik = 5,
-    Retro = 6
+    LEER = 0,
+    HORROR = 1,
+    COZY = 2,
+    FANTASY = 3,
+    SCIFI = 4,
+    LOGIK = 5,
+    RETRO = 6
 
 }
 
