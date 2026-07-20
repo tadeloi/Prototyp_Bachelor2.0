@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class VegetationSpawner : MonoBehaviour
@@ -10,12 +11,25 @@ public class VegetationSpawner : MonoBehaviour
     public int maxPOIs = 1000;
 
     [Header("Raycast Settings")]
-    public LayerMask groundLayerMask; // im Inspector nur auf "Landscape"-Layer setzen
-    public float raycastHeight = 100f; // Startpunkt des Rays über der Welt
+    public LayerMask groundLayerMask; // im Inspector nur auf "Ground"-Layer setzen
+    public float raycastHeight; // Startpunkt des Rays über der Welt
 
     void Start()
     {
         Vector3 randomSpawnPosition;
+
+        Debug.Log($"Ground layer index: {LayerMask.NameToLayer("Ground")}");
+        Debug.Log($"Ground mask from index: {1 << LayerMask.NameToLayer("Ground")}");
+        Debug.Log($"Inspector mask value: {groundLayerMask.value}");
+
+        if (!Physics.Raycast(new Vector3(0, 100, 0), Vector3.down, out var fixedHit, 200f, groundLayerMask, QueryTriggerInteraction.Collide))
+        {
+            Debug.Log("Fixed test failed too");
+        }
+        else
+        {
+            Debug.Log("Fixed test hit: " + fixedHit.collider.name);
+        }
 
         for (int i = 0; i < maxPOIs; i++)
         {
@@ -23,16 +37,32 @@ public class VegetationSpawner : MonoBehaviour
             float z = Random.Range(-300f, 300f);
 
             // Von oben nach unten Ray schießen
-            Vector3 rayOrigin = new Vector3(x, raycastHeight, z);
+            Vector3 rayOrigin = new(x, raycastHeight, z);
+            Debug.DrawRay(rayOrigin, Vector3.down * raycastHeight * 2f, Color.red, 2f);
+
+            int groundMask = LayerMask.GetMask("Ground");
+            Debug.Log($"Mask={groundMask} InspectorMask={groundLayerMask.value}");
+            Debug.Log(QueryTriggerInteraction.Collide.ToString());
+
+            if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit Testhit, raycastHeight * 2f, groundMask, QueryTriggerInteraction.Collide))
+            {
+                Debug.Log("Hit: " + Testhit.collider.name);
+            }
+            else
+            {
+                Debug.Log($"Miss at {rayOrigin}, xz inside plane? {x},{z}");
+            }
+
             if (Physics.Raycast(rayOrigin, Vector3.down, out RaycastHit hit, raycastHeight * 2f, groundLayerMask))
             {
                 randomSpawnPosition = hit.point;
-                //Debug.Log("Trying to spawn Object");
+                //Debug.Log("Trying to spawn Object Number: " + i);
                 SpawnObject(randomSpawnPosition);
             }
             else
             {
-                Debug.Log("Couldn't hit Landscape");
+                //Debug.Log("Couldn't hit LandscapeNumber: " + i + " at position: " + rayOrigin);
+                //Debug.Log("Ist der Hit leer: " + hit.point);
                 // Fallback, falls kein Treffer (z.B. außerhalb des Landschafts-Mesh)
             }
         }
